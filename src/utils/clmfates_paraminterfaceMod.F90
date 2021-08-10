@@ -1,7 +1,8 @@
-module CLMFates_ParamInterfaceMod
+module CLMFatesParamInterfaceMod
   ! NOTE(bja, 2017-01) this code can not go into the main clm-fates
   ! interface module because of circular dependancies with pftvarcon.
 
+  use shr_kind_mod, only : r8 => shr_kind_r8
   use FatesGlobals, only : fates_log
 
   implicit none
@@ -32,6 +33,7 @@ contains
 
    use EDParamsMod, only : FatesRegisterParams, FatesReceiveParams
    use SFParamsMod, only : SpitFireRegisterParams, SpitFireReceiveParams
+   use PRTInitParamsFATESMod, only : PRTRegisterParams, PRTReceiveParams
    use FatesSynchronizedParamsMod, only : FatesSynchronizedParamsInst
 
    implicit none
@@ -49,6 +51,7 @@ contains
       call fates_params%Init()
       call FatesRegisterParams(fates_params)
       call SpitFireRegisterParams(fates_params)
+      call PRTRegisterParams(fates_params)
       call FatesSynchronizedParamsInst%RegisterParams(fates_params)
 
       is_host_file = .false.
@@ -59,6 +62,7 @@ contains
 
       call FatesReceiveParams(fates_params)
       call SpitFireReceiveParams(fates_params)
+      call PRTReceiveParams(fates_params)
       call FatesSynchronizedParamsInst%ReceiveParams(fates_params)
 
       call fates_params%Destroy()
@@ -172,7 +176,6 @@ contains
  !-----------------------------------------------------------------------
  subroutine ParametersFromNetCDF(filename, is_host_file, fates_params)
 
-   use shr_kind_mod , only : r8 => shr_kind_r8
    use abortutils   , only : endrun
    use fileutils    , only : getfil
    use ncdio_pio    , only : file_desc_t , ncd_pio_closefile , ncd_pio_openfile
@@ -240,4 +243,4 @@ contains
  end subroutine ParametersFromNetCDF
  !-----------------------------------------------------------------------
 
-end module CLMFates_ParamInterfaceMod
+end module CLMFatesParamInterfaceMod

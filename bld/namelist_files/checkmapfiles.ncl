@@ -4,12 +4,12 @@
 ;
 ;  Erik Kluzek
 ;  Nov/18/2011
-;  $Id: checkmapfiles.ncl 42554 2012-12-11 00:09:30Z tcraig $
+;  $Id$
 ;  $HeadURL;
 ;
 
   print( "Check that datm mapping files are consistent" );
-  resolutions = (/ "128x256", "64x128", "48x96", "32x64", "8x16", "94x192", "0.23x0.31", "0.47x0.63", "0.9x1.25", "1.9x2.5", "2.5x3.33", "4x5", "10x15", "5x5_amazon", "1x1_tropicAtl", "1x1_camdenNJ", "1x1_vancouverCAN", "1x1_mexicocityMEX", "1x1_asphaltjungleNJ", "1x1_brazil", "1x1_urbanc_alpha", "1x1_numaIA", "1x1_smallvilleIA", "ne4np4", "ne16np4", "ne30np4", "ne60np4", "ne120np4", "ne240np4" /);
+  resolutions = (/ "128x256", "64x128", "48x96", "32x64", "8x16", "94x192", "0.23x0.31", "0.47x0.63", "0.9x1.25", "1.9x2.5", "2.5x3.33", "4x5", "10x15", "0.125nldas2", "5x5_amazon", "1x1_camdenNJ", "1x1_vancouverCAN", "1x1_mexicocityMEX", "1x1_asphaltjungleNJ", "1x1_brazil", "1x1_urbanc_alpha", "1x1_numaIA", "1x1_smallvilleIA", "ne4np4", "ne16np4", "ne30np4", "ne60np4", "ne120np4", "ne240np4" /);
  
   space  = "      ";
   badres = 0
@@ -76,13 +76,13 @@ begin
   if ( ismissing(clmroot) )then
      querynml = "../../"+querynml;
   else
-     querynml = clmroot+"/models/lnd/clm*/"+querynml;
+     querynml = clmroot+"/components/clm/"+querynml;
   end if
 
   print( "query string="+querynml )
 
 
-  mapgrids = (/"0.5x0.5_MODIS", "0.5x0.5_USGS", "0.5x0.5_AVHRR", "0.5x0.5_MODIS", "5x5min_nomask", "5x5min_IGBP-GSDP", "5x5min_ISRIC-WISE", "10x10min_nomask", "3x3min_MODIS", "3x3min_LandScan2004", "3x3min_GLOBE-Gardner", "3x3min_GLOBE-Gardner-mergeGIS"/);
+  mapgrids = (/"0.5x0.5_MODIS", "0.5x0.5_AVHRR", "0.5x0.5_MODIS", "5x5min_nomask", "5x5min_IGBP-GSDP", "5x5min_ISRIC-WISE", "10x10min_nomask", "3x3min_MODIS", "3x3min_LandScan2004", "3x3min_GLOBE-Gardner", "3x3min_GLOBE-Gardner-mergeGIS", "0.9x1.25_GRDC", "360x720cru_cruncep", "1km-merge-10min_HYDRO1K-merge-nomask"/);
   do i = 0, dimsizes(resolutions)-1
      res = resolutions(i);
      print( "Go through maps for Resolution: "+res );
@@ -136,7 +136,7 @@ begin
   ;
   ; go the other direction now check the _a variables
   ;
-  mksrf_files = (/"mksrf_fvegtyp", "mksrf_fglacier", "mksrf_furbtopo", "mksrf_flndtopo", "mksrf_flai", "mksrf_fsoitex", "mksrf_fsoicol", "mksrf_ffrac", "mksrf_fmax", "mksrf_ftopo", "mksrf_firrig", "mksrf_forganic", "mksrf_flakwat", "mksrf_fwetlnd", "mksrf_furban", "mksrf_fvocef"/)
+  mksrf_files = (/"mksrf_fvegtyp", "mksrf_fglacier", "mksrf_furbtopo", "mksrf_flai", "mksrf_fsoitex", "mksrf_fsoicol", "mksrf_ffrac", "mksrf_fmax", "mksrf_ftopo", "mksrf_firrig", "mksrf_forganic", "mksrf_flakwat", "mksrf_fwetlnd", "mksrf_furban", "mksrf_fvocef"/)
   do i = 0, dimsizes(mapgrids)-1
      grid = str_get_field( mapgrids(i), 1, "_" );
      lmask = str_get_field( mapgrids(i), 2, "_" );

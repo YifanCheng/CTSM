@@ -14,7 +14,7 @@ module initVerticalMod
   use spmdMod           , only : masterproc
   use clm_varpar        , only : nlevsno, nlevgrnd, nlevlak
   use clm_varpar        , only : toplev_equalspace, nlev_equalspace
-  use clm_varpar        , only : nlevsoi, nlevsoifl, nlevurb 
+  use clm_varpar        , only : nlevsoi, nlevsoifl, nlevurb, nlevmaxurbgrnd
   use clm_varctl        , only : fsurdat, iulog
   use clm_varctl        , only : use_vancouver, use_mexicocity, use_vertsoilc, use_extralakelayers
   use clm_varctl        , only : use_bedrock, rundef
@@ -22,7 +22,7 @@ module initVerticalMod
   use clm_varctl        , only : use_fates
   use clm_varcon        , only : zlak, dzlak, zsoi, dzsoi, zisoi, dzsoi_decomp, spval, ispval, grlnd 
   use column_varcon     , only : icol_roof, icol_sunwall, icol_shadewall, is_hydrologically_active
-  use landunit_varcon   , only : istdlak, istice_mec
+  use landunit_varcon   , only : istdlak, istice_mec, istsoil
   use fileutils         , only : getfil
   use LandunitType      , only : lun                
   use GridcellType      , only : grc                
@@ -39,9 +39,16 @@ module initVerticalMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: initVertical
+  public :: find_soil_layer_containing_depth
+  public :: readParams
 
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: hasBedrock  ! true if the given column type includes bedrock layers
+  type, private :: params_type
+     real(r8) :: slopebeta      ! exponent for microtopography pdf sigma (unitless)
+     real(r8) :: slopemax       ! max topographic slope for microtopography pdf sigma (unitless)
+  end type params_type
+  type(params_type), private ::  params_inst
   !
 
   character(len=*), parameter, private :: sourcefile = &
@@ -51,6 +58,28 @@ module initVerticalMod
   !------------------------------------------------------------------------
 
 contains
+
+  !-----------------------------------------------------------------------
+  subroutine readParams( ncid )
+    !
+    ! !USES:
+    use ncdio_pio, only: file_desc_t
+    use paramUtilMod, only: readNcdioScalar
+    !
+    ! !ARGUMENTS:
+    implicit none
+    type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
+    !
+    ! !LOCAL VARIABLES:
+    character(len=*), parameter :: subname = 'readParams_initVertical'
+    !--------------------------------------------------------------------
+
+    ! Exponent for microtopography pdf sigma (unitless)
+    call readNcdioScalar(ncid, 'slopebeta', subname, params_inst%slopebeta)
+    ! Max topographic slope for microtopography pdf sigma (unitless) 
+    call readNcdioScalar(ncid, 'slopemax', subname, params_inst%slopemax)
+
+  end subroutine readParams
 
   !------------------------------------------------------------------------
   subroutine initVertical(bounds, glc_behavior, snow_depth, thick_wall, thick_roof)
@@ -64,7 +93,7 @@ contains
     real(r8)            , intent(in)    :: thick_roof(bounds%begl:)
     !
     ! LOCAL VARAIBLES:
-    integer               :: c,l,g,i,j,lev     ! indices 
+    integer               :: c,l,g,i,j,lev,nh  ! indices 
     type(file_desc_t)     :: ncid              ! netcdf id
     logical               :: readvar 
     integer               :: dimid             ! dimension id
@@ -72,8 +101,6 @@ contains
     real(r8) ,pointer     :: std (:)           ! read in - topo_std 
     real(r8) ,pointer     :: tslope (:)        ! read in - topo_slope 
     real(r8)              :: slope0            ! temporary
-    real(r8)              :: slopebeta         ! temporary
-    real(r8)              :: slopemax          ! temporary
     integer               :: ier               ! error status
     real(r8)              :: scalez = 0.025_r8 ! Soil layer thickness discretization (m)
     real(r8)              :: thick_equal = 0.2
@@ -90,7 +117,6 @@ contains
     integer               :: begc, endc
     integer               :: begl, endl
     integer               :: jmin_bedrock
-
     ! Possible values for levgrnd_class. The important thing is that, for a given column,
     ! layers that are fundamentally different (e.g., soil vs bedrock) have different
     ! values. This information is used in the vertical interpolation in init_interp.
@@ -200,7 +226,7 @@ contains
              dzsoi(j) = soil_layerstruct_userdefined(j)
           end do
        else if (soil_layerstruct_predefined == '49SL_10m') then
-          !scs: 10 meter soil column, nlevsoi set to 49 in clm_varpar
+          ! 10 meter soil column, nlevsoi set to 49 in clm_varpar
           do j = 1, 10
              dzsoi(j) = 1.e-2_r8     ! 10-mm layers
           enddo
@@ -428,11 +454,21 @@ contains
              col%z(c,1:nlevgrnd)  = zsoi(1:nlevgrnd)
              col%zi(c,0:nlevgrnd) = zisoi(0:nlevgrnd)
              col%dz(c,1:nlevgrnd) = dzsoi(1:nlevgrnd)
+             if (nlevgrnd < nlevurb) then
+                col%z(c,nlevgrnd+1:nlevurb)  = spval
+                col%zi(c,nlevgrnd+1:nlevurb) = spval
+                col%dz(c,nlevgrnd+1:nlevurb) = spval
+             end if
           end if
        else if (lun%itype(l) /= istdlak) then
           col%z(c,1:nlevgrnd)  = zsoi(1:nlevgrnd)
           col%zi(c,0:nlevgrnd) = zisoi(0:nlevgrnd)
           col%dz(c,1:nlevgrnd) = dzsoi(1:nlevgrnd)
+          if (nlevgrnd < nlevurb) then
+             col%z(c,nlevgrnd+1:nlevurb)  = spval
+             col%zi(c,nlevgrnd+1:nlevurb) = spval
+             col%dz(c,nlevgrnd+1:nlevurb) = spval
+          end if
        end if
     end do
 
@@ -601,6 +637,11 @@ contains
           col%z(c,1:nlevgrnd)  = zsoi(1:nlevgrnd)
           col%zi(c,0:nlevgrnd) = zisoi(0:nlevgrnd)
           col%dz(c,1:nlevgrnd) = dzsoi(1:nlevgrnd)
+          if (nlevgrnd < nlevurb) then
+             col%z(c,nlevgrnd+1:nlevurb)  = spval
+             col%zi(c,nlevgrnd+1:nlevurb) = spval
+             col%dz(c,nlevgrnd+1:nlevurb) = spval
+          end if
        end if
     end do
 
@@ -621,13 +662,13 @@ contains
           if (col%nbedrock(c) < nlevsoi) then
              col%levgrnd_class(c, (col%nbedrock(c) + 1) : nlevsoi) = LEVGRND_CLASS_SHALLOW_BEDROCK
           end if
-          col%levgrnd_class(c, (nlevsoi + 1) : nlevgrnd) = LEVGRND_CLASS_DEEP_BEDROCK
+          col%levgrnd_class(c, (nlevsoi + 1) : nlevmaxurbgrnd) = LEVGRND_CLASS_DEEP_BEDROCK
        else
-          col%levgrnd_class(c, 1:nlevgrnd) = LEVGRND_CLASS_STANDARD
+          col%levgrnd_class(c, 1:nlevmaxurbgrnd) = LEVGRND_CLASS_STANDARD
        end if
     end do
 
-    do j = 1, nlevgrnd
+    do j = 1, nlevmaxurbgrnd
        do c = bounds%begc, bounds%endc
           if (col%z(c,j) == spval) then
              col%levgrnd_class(c,j) = ispval
@@ -677,15 +718,61 @@ contains
 
     do c = begc,endc
        ! microtopographic parameter, units are meters (try smooth function of slope)
-       slopebeta = 3._r8
-       slopemax = 0.4_r8
-       slope0 = slopemax**(-1._r8/slopebeta)
-       col%micro_sigma(c) = (col%topo_slope(c) + slope0)**(-slopebeta)
+       slope0 = params_inst%slopemax**(1._r8/params_inst%slopebeta)
+       col%micro_sigma(c) = (col%topo_slope(c) + slope0)**(params_inst%slopebeta)
     end do
 
     call ncd_pio_closefile(ncid)
 
   end subroutine initVertical
+
+  !-----------------------------------------------------------------------
+  subroutine find_soil_layer_containing_depth(depth, layer)
+    !
+    ! !DESCRIPTION:
+    ! Find the soil layer that contains the given depth
+    !
+    ! Aborts if the given depth doesn't exist in the soil profile
+    !
+    ! We consider the interface between two layers to belong to the layer *above* that
+    ! interface. This implies that the top interface (at exactly 0 m) is not considered
+    ! to be part of the soil profile.
+    !
+    ! !ARGUMENTS:
+    real(r8), intent(in)  :: depth  ! target depth, m
+    integer , intent(out) :: layer  ! layer containing target depth
+    !
+    ! !LOCAL VARIABLES:
+    logical :: found
+    integer :: i
+
+    character(len=*), parameter :: subname = 'find_soil_layer_containing_depth'
+    !-----------------------------------------------------------------------
+
+    if (depth <= zisoi(0)) then
+       write(iulog,*) subname, ': ERROR: depth above top of soil'
+       write(iulog,*) 'depth = ', depth
+       write(iulog,*) 'zisoi = ', zisoi
+       call endrun(msg=subname//': depth above top of soil')
+    end if
+
+    found = .false.
+    do i = 1, nlevgrnd
+       if (depth <= zisoi(i)) then
+          layer = i
+          found = .true.
+          exit
+       end if
+    end do
+
+    if (.not. found) then
+       write(iulog,*) subname, ': ERROR: depth below bottom of soil'
+       write(iulog,*) 'depth = ', depth
+       write(iulog,*) 'zisoi = ', zisoi
+       call endrun(msg=subname//': depth below bottom of soil')
+    end if
+
+  end subroutine find_soil_layer_containing_depth
 
   !-----------------------------------------------------------------------
   logical function hasBedrock(col_itype, lun_itype)

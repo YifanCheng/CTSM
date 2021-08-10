@@ -20,17 +20,45 @@ module SoilHydrologyInitTimeConstMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: SoilHydrologyInitTimeConst
+  public :: readParams
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: initSoilParVIC    ! Convert default CLM soil properties to VIC parameters
   private :: initCLMVICMap     ! Initialize map from VIC to CLM layers
   private :: linear_interp     ! function for linear interperation 
+  type, private :: params_type
+     real(r8) :: pc            ! Threshold probability for surface water (unitless)
+     real(r8) :: om_frac_sf    ! Scale factor for organic matter fraction (unitless)
+  end type params_type
+  type(params_type), private ::  params_inst
 
   character(len=*), parameter, private :: sourcefile = &
        __FILE__
   !-----------------------------------------------------------------------
   !
 contains
+
+  !-----------------------------------------------------------------------
+  subroutine readParams( ncid )
+    !
+    ! !USES:
+    use ncdio_pio, only: file_desc_t
+    use paramUtilMod, only: readNcdioScalar
+    !
+    ! !ARGUMENTS:
+    implicit none
+    type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
+    !
+    ! !LOCAL VARIABLES:
+    character(len=*), parameter :: subname = 'readParams_SoilHydrologyInitTimeConst'
+    !--------------------------------------------------------------------
+
+    ! Threshold probability for surface water (unitless)
+    call readNcdioScalar(ncid, 'pc', subname, params_inst%pc)
+    ! Scale factor for om_frac (unitless)
+    call readNcdioScalar(ncid, 'om_frac_sf', subname, params_inst%om_frac_sf)
+
+  end subroutine readParams
 
   !-----------------------------------------------------------------------
   subroutine SoilHydrologyInitTimeConst(bounds, soilhydrology_inst, soilstate_inst)
@@ -43,7 +71,7 @@ contains
     use clm_varctl      , only : fsurdat, iulog, use_vichydro
     use clm_varpar      , only : toplev_equalspace
     use clm_varpar      , only : nlevsoi, nlevgrnd, nlayer, nlayert
-    use clm_varcon      , only : dzsoi, spval, nlvic, dzvic, pc, grlnd
+    use clm_varcon      , only : dzsoi, spval, nlvic, dzvic, grlnd
     use clm_varcon      , only : aquifer_water_baseline
     use landunit_varcon , only : istwet, istdlak, istice_mec
     use column_varcon   , only : icol_shadewall, icol_road_perv, icol_road_imperv, icol_roof, icol_sunwall
@@ -159,7 +187,7 @@ contains
                    if ( lev <= nlevsoi )then
                       claycol(c,lev)    = soilstate_inst%cellclay_col(c,lev)
                       sandcol(c,lev)    = soilstate_inst%cellsand_col(c,lev)
-                      om_fraccol(c,lev) = soilstate_inst%cellorg_col(c,lev) / organic_max
+                      om_fraccol(c,lev) = min(params_inst%om_frac_sf*soilstate_inst%cellorg_col(c,lev) / organic_max, 1._r8)
                    else
                       claycol(c,lev)    = soilstate_inst%cellclay_col(c,nlevsoi)
                       sandcol(c,lev)    = soilstate_inst%cellsand_col(c,nlevsoi)
@@ -167,22 +195,6 @@ contains
                    end if
 
                 end do
-             end if
-          end if ! end of if not lake
-
-          if (lun%itype(l) /= istdlak) then  ! soil columns of both urban and non-urban types
-             if (lun%urbpoi(l)) then
-                if (col%itype(c)==icol_sunwall .or. col%itype(c)==icol_shadewall .or. col%itype(c)==icol_roof) then
-                   ! do nothing
-                else
-                   soilhydrology_inst%depth_col(c, 1:nlayer)         = dzvic
-                   soilhydrology_inst%depth_col(c, nlayer+1:nlayert) = col%dz(c, nlevsoi+1:nlevgrnd)
-
-                   ! create weights to map soil moisture profiles (10 layer) to 3 layers for VIC hydrology, M.Huang
-                   call initCLMVICMap(c, soilhydrology_inst)
-                   call initSoilParVIC(c, claycol, sandcol, om_fraccol, soilhydrology_inst)
-                end if
-             else 
                 soilhydrology_inst%depth_col(c, 1:nlayer) = dzvic
                 soilhydrology_inst%depth_col(c, nlayer+1:nlayert) = col%dz(c, nlevsoi+1:nlevgrnd)
 
@@ -191,7 +203,6 @@ contains
                 call initSoilParVIC(c, claycol, sandcol, om_fraccol, soilhydrology_inst)
              end if
           end if ! end of if not lake
-
        end do ! end of loop over columns
 
       deallocate(b2d, ds2d, dsmax2d, ws2d)
@@ -209,7 +220,7 @@ contains
          if (micro_sigma(c) > 1.e-6_r8 .and. (soilhydrology_inst%h2osfcflag /= 0)) then
             d = 0.0
             do p = 1,4
-               fd   = 0.5*(1.0_r8+shr_spfn_erf(d/(micro_sigma(c)*sqrt(2.0)))) - pc
+               fd   = 0.5*(1.0_r8+shr_spfn_erf(d/(micro_sigma(c)*sqrt(2.0)))) - params_inst%pc
                dfdd = exp(-d**2/(2.0*micro_sigma(c)**2))/(micro_sigma(c)*sqrt(2.0*shr_const_pi))
                d    = d - fd/dfdd
             enddo

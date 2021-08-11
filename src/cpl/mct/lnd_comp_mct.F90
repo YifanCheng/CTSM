@@ -619,6 +619,7 @@ contains
     data(:) = -9999.0_R8
     call mct_gGrid_importRAttr(dom_l,"lat"  ,data,lsize)
     call mct_gGrid_importRAttr(dom_l,"lon"  ,data,lsize)
+    call mct_gGrid_importRAttr(dom_l,"hgt"  ,data,lsize)
     call mct_gGrid_importRAttr(dom_l,"area" ,data,lsize)
     call mct_gGrid_importRAttr(dom_l,"aream",data,lsize)
     data(:) = 0.0_R8

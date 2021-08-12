@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 #=======================================================================
 #
-#  This is a script to read the CTSM namelist XML file
+#  This is a script to read the CLM namelist XML file
 #
 # Usage:
 #
@@ -34,10 +34,9 @@ else { $cfgdir = $cwd; }
 
 #-----------------------------------------------------------------------------------------------
 # Add $cfgdir to the list of paths that Perl searches for modules
-my @dirs = ( $cfgdir, "$cfgdir/perl5lib",
-             "$cfgdir/../../../../scripts/ccsm_utils/Tools/perl5lib",
-             "$cfgdir/../../../../models/utils/perl5lib",
-           );
+my @dirs = ( "$cfgdir",
+             "$cfgdir/../cime/utils/perl5lib", 
+             "$cfgdir/../../../cime/utils/perl5lib" );
 unshift @INC, @dirs;
 my $result = eval "require XML::Lite";
 if ( ! defined($result) ) {
@@ -50,7 +49,7 @@ require Build::NamelistDefinition;
 require queryDefaultXML;
 
 # Defaults
-my $namelist = "ctsm_inparm";
+my $namelist = "clm_inparm";
 my $config = "config_cache.xml";
 
 
@@ -61,9 +60,9 @@ SYNOPSIS
 
      query default namelist values.
 OPTIONS
-     -config "file"                       CTSM build configuration file created by configure.
+     -config "file"                       CLM build configuration file created by configure.
      -cesm                                CESM mode set csmdata to \$DIN_LOC_ROOT.
-     -usrname "name"                      Dataset resolution/descriptor for personal datasets.  
+     -usrname "name"                      Dataset resolution/descriptor for personal datasets.
                                           Default : not used
                                           Example: 1x1pt_boulderCO to describe location,
                                           number of pts
@@ -81,7 +80,7 @@ OPTIONS
      -res  "resolution"                   Resolution to use for files. Use "-res list" to
                                           list all valid resolutions. Use "-res any" to
                                           use any valid resolution.
-     -silent [or -s]                      Don't do any extra printing.
+     -silent [or -s]                      Do not do any extra printing.
      -test   [or -t]                      Test that files exists.
 EXAMPLES
 
@@ -109,12 +108,12 @@ EOF
 
 #-----------------------------------------------------------------------------------------------
 
-  my %opts = ( 
+  my %opts = (
                namelist   => $namelist,
                var        => undef,
                hgrid      => undef,
                config     => undef,
-               cesm       => undef, 
+               cesm       => undef,
                csmdata    => undef,
                demand     => undef,
                test       => undef,
@@ -178,13 +177,11 @@ EOF
   }
   # List of input options
   my %inputopts;
-  $inputopts{empty_cfg_file} = "$cfgdir/config_files/config_definition.xml";
-  my $datmblddir             = "$cfgdir/../../../../models/atm/datm/bld";
-  my $drvblddir              = "$cfgdir/../../../../models/drv/bld";
-  my @nl_definition_files    = ( "$datmblddir/namelist_files/namelist_definition_datm.xml",
-                                 "$drvblddir/namelist_files/namelist_definition_drv.xml",
-                                 "$cfgdir/namelist_files/namelist_definition.xml" 
+  # This namelist files under the cime directories are in version 2 format and can't be read by perl code EBK 11/15/2016
+  my @nl_definition_files    = ("$cfgdir/namelist_files/namelist_definition_drv.xml",
+                                "$cfgdir/namelist_files/namelist_definition_ctsm.xml"
                                );
+  $inputopts{empty_cfg_file} = "$cfgdir/config_files/config_definition_ctsm.xml";
   $inputopts{nldef_files}    = \@nl_definition_files;
   $inputopts{namelist}       = $opts{namelist};
   $inputopts{printing}       = $printing;
@@ -195,6 +192,9 @@ EOF
   my $exitearly = 0;
   my $definition = Build::NamelistDefinition->new( $nl_definition_files[0] );
   foreach my $nl_defin_file ( @nl_definition_files ) {
+     if ( ! -f "$nl_defin_file" ) {
+        die "($ProgName $cmdline) ERROR:: bad namelist definition filename: $nl_defin_file.\n";
+     }
      $definition->add( "$nl_defin_file" );
   }
 
@@ -241,15 +241,14 @@ EOF
   if ( defined($opts{'usrname'}) ) {
      my $nl_defaults_file =  "$cfgdir/namelist_files/namelist_defaults_usr_files.xml";
      push( @nl_defaults_files, $nl_defaults_file );
-     $settings{'ctsm_usr_name'} = $opts{'usrname'};
+     $settings{'clm_usr_name'} = $opts{'usrname'};
      $settings{'notest'}       = ! $opts{'test'};
      $settings{'csmdata'}      = $inputopts{csmdata};
   } else {
-     my @files = ( "$cfgdir/namelist_files/namelist_defaults_clm.xml", 
-                   "$cfgdir/namelist_files/namelist_defaults_clm_tools.xml", 
-                   "$drvblddir/namelist_files/namelist_defaults_drv.xml",
+     my @files = ( "$cfgdir/namelist_files/namelist_defaults_ctsm.xml",
+                   "$cfgdir/namelist_files/namelist_defaults_ctsm_tools.xml",
+                   "$cfgdir/namelist_files/namelist_defaults_drv.xml",
                    "$cfgdir/namelist_files/namelist_defaults_drydep.xml",
-                   "$datmblddir/namelist_files/namelist_defaults_datm.xml",
                  );
      push( @nl_defaults_files, @files );
   }

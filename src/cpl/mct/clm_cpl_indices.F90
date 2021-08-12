@@ -111,6 +111,8 @@ module clm_cpl_indices
   integer, public ::index_x2l_Flrr_flood      ! rtm->lnd rof flood flux
   integer, public ::index_x2l_Flrr_volr       ! rtm->lnd rof volr total volume
   integer, public ::index_x2l_Flrr_volrmch    ! rtm->lnd rof volr main channel volume
+  integer, public ::index_x2l_Sr_tdepth       ! rtm->lnd tributary water depth
+  integer, public ::index_x2l_Sr_tdepth_max   ! rtm->lnd tributary bankfull water depth
 
   ! In the following, index 0 is bare land, other indices are glc elevation classes
   integer, allocatable, public ::index_x2l_Sg_ice_covered(:) ! Fraction of glacier from glc model
@@ -173,10 +175,10 @@ contains
     !-------------------------------------------------------------
 
 !tcx    index_l2x_Flrl_rofsur   = mct_avect_indexra(l2x,'Flrl_rofsur')
-!    index_l2x_Flrl_rofgwl   = mct_avect_indexra(l2x,'Flrl_rofgwl')
-!    index_l2x_Flrl_rofsub   = mct_avect_indexra(l2x,'Flrl_rofsub')
-!    index_l2x_Flrl_rofi     = mct_avect_indexra(l2x,'Flrl_rofi')
-!    index_l2x_Flrl_irrig    = mct_avect_indexra(l2x,'Flrl_irrig')
+!tcx    index_l2x_Flrl_rofgwl   = mct_avect_indexra(l2x,'Flrl_rofgwl')
+!tcx    index_l2x_Flrl_rofsub   = mct_avect_indexra(l2x,'Flrl_rofsub')
+!tcx    index_l2x_Flrl_rofi     = mct_avect_indexra(l2x,'Flrl_rofi')
+!tcx    index_l2x_Flrl_irrig    = mct_avect_indexra(l2x,'Flrl_irrig')
     index_l2x_Flrl_rofsur   = mct_avect_indexra(l2x,'Flrl_rofliq')
     index_l2x_Flrl_rofi     = mct_avect_indexra(l2x,'Flrl_rofice')
 
@@ -251,6 +253,8 @@ contains
 
 !tcx    index_x2l_Flrr_volr     = mct_avect_indexra(x2l,'Flrr_volr')
 !tcx    index_x2l_Flrr_volrmch  = mct_avect_indexra(x2l,'Flrr_volrmch')
+!tcx    index_x2l_Sr_tdepth     = mct_avect_indexra(x2l,'Sr_tdepth')
+!tcx    index_x2l_Sr_tdepth_max = mct_avect_indexra(x2l,'Sr_tdepth_max')
 
     index_x2l_Faxa_lwdn     = mct_avect_indexra(x2l,'Faxa_lwdn')
     index_x2l_Faxa_rainc    = mct_avect_indexra(x2l,'Faxa_rainc')
@@ -312,16 +316,16 @@ contains
        name = 'Sg_ice_covered' // nec_str
 !tcx       index_x2l_Sg_ice_covered(num) = mct_avect_indexra(x2l,trim(name))
        name = 'Sg_topo' // nec_str
-!       index_x2l_Sg_topo(num)   = mct_avect_indexra(x2l,trim(name))
+!tcx       index_x2l_Sg_topo(num)   = mct_avect_indexra(x2l,trim(name))
        name = 'Flgg_hflx' // nec_str
-!       index_x2l_Flgg_hflx(num) = mct_avect_indexra(x2l,trim(name))
+!tcx       index_x2l_Flgg_hflx(num) = mct_avect_indexra(x2l,trim(name))
 
        name = 'Sl_tsrf' // nec_str
-!       index_l2x_Sl_tsrf(num)   = mct_avect_indexra(l2x,trim(name))
+!tcx       index_l2x_Sl_tsrf(num)   = mct_avect_indexra(l2x,trim(name))
        name = 'Sl_topo' // nec_str
-!       index_l2x_Sl_topo(num)   = mct_avect_indexra(l2x,trim(name))
+!tcx       index_l2x_Sl_topo(num)   = mct_avect_indexra(l2x,trim(name))
        name = 'Flgl_qice' // nec_str
-!       index_l2x_Flgl_qice(num) = mct_avect_indexra(l2x,trim(name))
+!tcx       index_l2x_Flgl_qice(num) = mct_avect_indexra(l2x,trim(name))
     end do
 
     call mct_aVect_clean(x2l)

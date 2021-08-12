@@ -8,7 +8,7 @@ module clm_instMod
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use decompMod       , only : bounds_type
   use clm_varpar      , only : ndecomp_pools, nlevdecomp_full
-  use clm_varctl      , only : use_cn, use_c13, use_c14, use_lch4, use_cndv, use_fates
+  use clm_varctl      , only : use_cn, use_c13, use_c14, use_lch4, use_cndv, use_fates, use_hillslope
   use clm_varctl      , only : use_century_decomp, use_crop, snow_cover_fraction_method, paramfile
   use clm_varcon      , only : bdsno, c13ratio, c14ratio
   use landunit_varcon , only : istice_mec, istsoil
@@ -47,6 +47,7 @@ module clm_instMod
   use EnergyFluxType                  , only : energyflux_type
   use FrictionVelocityMod             , only : frictionvel_type
   use GlacierSurfaceMassBalanceMod    , only : glacier_smb_type
+  use HillslopeHydrologyMod           , only : InitHillslope
   use InfiltrationExcessRunoffMod     , only : infiltration_excess_runoff_type
   use IrrigationMod                   , only : irrigation_type
   use LakeStateType                   , only : lakestate_type
@@ -185,6 +186,8 @@ contains
     !
     ! !USES: 
     use clm_varpar                         , only : nlevsno
+    use clm_varctl                         , only : use_soil_matrixcn
+    use abortutils                         , only : endrun
     use controlMod                         , only : nlfilename, fsurdat
     use domainMod                          , only : ldomain
     use SoilBiogeochemDecompCascadeBGCMod  , only : init_decompcascade_bgc
@@ -325,6 +328,10 @@ contains
     call saturated_excess_runoff_inst%Init(bounds)
     call infiltration_excess_runoff_inst%Init(bounds)
 
+    if(use_hillslope) then 
+       call InitHillslope(bounds, fsurdat)
+    endif
+
     call solarabs_inst%Init(bounds)
 
     call surfalb_inst%Init(bounds)
@@ -374,6 +381,9 @@ contains
        ! soilbiogeochem_state_inst to be initialized
 
        call init_decomp_cascade_constants( use_century_decomp )
+       if ( use_soil_matrixcn .and. use_fates )then
+          call endrun( "ERROR: Currently use_soil_matrixcn can NOT be used with FATES" )
+       end if
        if (use_century_decomp) then
           call init_decompcascade_bgc(bounds, soilbiogeochem_state_inst, &
                                       soilstate_inst )
@@ -421,7 +431,7 @@ contains
     end if ! end of if use_cn 
 
     ! Note - always call Init for bgc_vegetation_inst: some pieces need to be initialized always
-    call bgc_vegetation_inst%Init(bounds, nlfilename, GetBalanceCheckSkipSteps() )
+    call bgc_vegetation_inst%Init(bounds, nlfilename, GetBalanceCheckSkipSteps(), params_ncid )
 
     if (use_cn .or. use_fates) then
        call crop_inst%Init(bounds)
@@ -460,6 +470,10 @@ contains
 
     if (use_crop) then
        call crop_inst%InitAccBuffer(bounds)
+    end if
+
+    if (use_fates) then
+       call clm_fates%InitAccBuffer(bounds)
     end if
 
     call print_accum_fields()
@@ -575,7 +589,9 @@ contains
 
        call clm_fates%restart(bounds, ncid, flag=flag,  &
             waterdiagnosticbulk_inst=water_inst%waterdiagnosticbulk_inst, &
-            canopystate_inst=canopystate_inst)
+            waterstatebulk_inst=water_inst%waterstatebulk_inst, &
+            canopystate_inst=canopystate_inst, &
+            soilstate_inst=soilstate_inst)
 
     end if
 

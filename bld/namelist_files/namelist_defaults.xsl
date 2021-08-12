@@ -26,11 +26,9 @@
        <li>Maximum number of Plant Function Types (maxpft)</li>
        <li>Number of glacier multiple elevation classes (glc_nec)</li>
        <li>Site specific point name (sitespf_pt)</li>
-       <li>Glacier model grid size (glc_grid)</li>
        <li>Crop model (crop)</li>
-       <li>Irrigation model (irrig)</li>
        <li>Data model forcing source (forcing)</li>
-       <li>Representative concentration pathway for future scenarios (rcp)</li>
+       <li>Representative concentration pathway for future scenarios (SSP-rcp)</li>
        <li>New good wood harvest (newwoodharv)</li>
        <li>CN Spin-up mode (spinup)</li>
        <li>Type of file (type)</li>
@@ -129,17 +127,11 @@
         <xsl:if test="string-length(@sitespf_pt)>0">
         sitespf_pt=<xsl:value-of select="@sitespf_pt"/>
         </xsl:if>
-        <xsl:if test="string-length(@glc_grid)>0">
-        glc_grid=<xsl:value-of select="@glc_grid"/>
-        </xsl:if>
         <xsl:if test="string-length(@datm_presaero)>0">
         datm_presaero=<xsl:value-of select="@datm_presaero"/>
         </xsl:if>
         <xsl:if test="string-length(@crop)>0">
         crop=<xsl:value-of select="@crop"/>
-        </xsl:if>
-        <xsl:if test="string-length(@irrig)>0">
-        irrig=<xsl:value-of select="@irrig"/>
         </xsl:if>
         <xsl:if test="string-length(@spinup)>0">
         spinup=<xsl:value-of select="@spinup"/>

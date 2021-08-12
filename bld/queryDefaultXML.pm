@@ -122,7 +122,7 @@ sub ReadDefaultXMLFile {
     my $isafile = 0;
     if ( $definition->is_input_pathname($name) ) {
 
-       if ( defined($$settings_ref{'ctsm_usr_name'}) ) {
+       if ( defined($$settings_ref{'clm_usr_name'}) ) {
           $value   = $nldefaults->get_usr_file( $name, $definition, \%nlopts );
        } 
        if ( $value && ($value !~ /^\/.+$/) ) {

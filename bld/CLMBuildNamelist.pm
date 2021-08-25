@@ -2950,9 +2950,9 @@ sub setup_logic_hydrology_switches {
   if ( defined($origflag) && defined($use_vic) && (&value_is_true($use_vic)) && $origflag == 1 ) {
      $log->fatal_error( "If use_vichydro is on -- origflag can NOT be equal to 1" );
   }
-  if ( defined($h2osfcflag) && defined($lower) && $h2osfcflag == 0 && $lower != 4 ) {
-     $log->fatal_error( "If h2osfcflag is 0 lower_boundary_condition can only be aquifer" );
-  }
+#  if ( defined($h2osfcflag) && defined($lower) && $h2osfcflag == 0 && $lower != 4 ) {
+#     $log->fatal_error( "If h2osfcflag is 0 lower_boundary_condition can only be aquifer" );
+#  }
 }
 
 #-------------------------------------------------------------------------------

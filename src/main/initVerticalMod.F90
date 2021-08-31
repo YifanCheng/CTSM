@@ -45,7 +45,7 @@ module initVerticalMod
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: hasBedrock  ! true if the given column type includes bedrock layers
   type, private :: params_type
-     real(r8) :: slopebeta      ! exponent for microtopography pdf sigma (unitless)
+!     real(r8) :: slopebeta      ! exponent for microtopography pdf sigma (unitless)
      real(r8) :: slopemax       ! max topographic slope for microtopography pdf sigma (unitless)
   end type params_type
   type(params_type), private ::  params_inst
@@ -74,8 +74,8 @@ contains
     character(len=*), parameter :: subname = 'readParams_initVertical'
     !--------------------------------------------------------------------
 
-    ! Exponent for microtopography pdf sigma (unitless)
-    call readNcdioScalar(ncid, 'slopebeta', subname, params_inst%slopebeta)
+!    ! Exponent for microtopography pdf sigma (unitless)
+!    call readNcdioScalar(ncid, 'slopebeta', subname, params_inst%slopebeta)
     ! Max topographic slope for microtopography pdf sigma (unitless) 
     call readNcdioScalar(ncid, 'slopemax', subname, params_inst%slopemax)
 
@@ -117,6 +117,12 @@ contains
     integer               :: begc, endc
     integer               :: begl, endl
     integer               :: jmin_bedrock
+    real(r8) ,pointer     :: snowhydro_ssi (:) ! read in params - ssi
+    real(r8) ,pointer     :: snowhydro_n_melt_coef (:) ! read in params - n_melt_coef
+    real(r8) ,pointer     :: hydro_e_ice   (:) ! read in params - e_ice
+    real(r8) ,pointer     :: hydro_fff     (:) ! read in params - fff
+    real(r8) ,pointer     :: slopebeta     (:) ! read in params - slopebeta
+
     ! Possible values for levgrnd_class. The important thing is that, for a given column,
     ! layers that are fundamentally different (e.g., soil vs bedrock) have different
     ! values. This information is used in the vertical interpolation in init_interp.
@@ -713,14 +719,78 @@ contains
     deallocate(std)
 
     !-----------------------------------------------
+    ! Read in spatially distributed parameters
+    !-----------------------------------------------
+    allocate(snowhydro_ssi(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='ssi', flag='read', data=snowhydro_ssi, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       call shr_sys_abort(' ERROR: ssi NOT on surfdata file'//&
+            errMsg(sourcefile, __LINE__))
+    end if
+    do c = begc,endc
+       g = col%gridcell(c)
+       ! check for near zero slopes, set minimum value
+       col%ssi(c) = snowhydro_ssi(g) 
+    end do
+    deallocate(snowhydro_ssi)
+
+    allocate(snowhydro_n_melt_coef(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='n_melt_coef', flag='read', data=snowhydro_n_melt_coef, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       call shr_sys_abort(' ERROR: n_melt_coef NOT on surfdata file'//&
+            errMsg(sourcefile, __LINE__))
+    end if
+    do c = begc,endc
+       g = col%gridcell(c)
+       ! check for near zero slopes, set minimum value
+       col%n_melt_coef(c) = snowhydro_n_melt_coef(g)
+    end do
+    deallocate(snowhydro_n_melt_coef)
+
+    allocate(hydro_e_ice(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='e_ice', flag='read', data=hydro_e_ice, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       call shr_sys_abort(' ERROR: e_ice NOT on surfdata file'//&
+            errMsg(sourcefile, __LINE__))
+    end if
+    do c = begc,endc
+       g = col%gridcell(c)
+       ! check for near zero slopes, set minimum value
+       col%e_ice(c) = hydro_e_ice(g)
+    end do
+    deallocate(hydro_e_ice)
+
+    allocate(hydro_fff(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='fff', flag='read', data=hydro_fff, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       call shr_sys_abort(' ERROR: fff NOT on surfdata file'//&
+            errMsg(sourcefile, __LINE__))
+    end if
+    do c = begc,endc
+       g = col%gridcell(c)
+       ! check for near zero slopes, set minimum value
+       col%fff(c) = hydro_fff(g)
+    end do
+    deallocate(hydro_fff)
+
+    !-----------------------------------------------
     ! SCA shape function defined
     !-----------------------------------------------
+    
+    allocate(slopebeta(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='slopebeta', flag='read', data=slopebeta, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       call shr_sys_abort(' ERROR: slopebeta NOT on surfdata file'//&
+            errMsg(sourcefile, __LINE__))
+    end if
 
     do c = begc,endc
        ! microtopographic parameter, units are meters (try smooth function of slope)
-       slope0 = params_inst%slopemax**(1._r8/params_inst%slopebeta)
-       col%micro_sigma(c) = (col%topo_slope(c) + slope0)**(params_inst%slopebeta)
+       g = col%gridcell(c)
+       slope0 = params_inst%slopemax**(1._r8/slopebeta(g))
+       col%micro_sigma(c) = (col%topo_slope(c) + slope0)**(slopebeta(g))
     end do
+    deallocate(slopebeta)
 
     call ncd_pio_closefile(ncid)
 

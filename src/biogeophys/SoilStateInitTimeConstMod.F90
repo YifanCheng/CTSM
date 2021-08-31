@@ -35,8 +35,8 @@ module SoilStateInitTimeConstMod
      real(r8) :: csol_om             ! Heat capacity of peat soil *10^6 (Farouki, 1986) (J/K/m3)
      real(r8) :: csol_sand           ! Heat capacity of sand *10^6 (J/K/m3)
      real(r8) :: bsw_sf              ! Scale factor for bsw (unitless)
-     real(r8) :: hksat_sf            ! Scale factor for hksat (unitless)
-     real(r8) :: sucsat_sf           ! Scale factor for sucsat (unitless)
+!     real(r8) :: hksat_sf            ! Scale factor for hksat (unitless)
+!     real(r8) :: sucsat_sf           ! Scale factor for sucsat (unitless)
      real(r8) :: watsat_sf           ! Scale factor for watsat (unitless)
      real(r8) :: sand_pf             ! Perturbation factor (via addition) for percent sand (percent)
      real(r8) :: clay_pf             ! Perturbation factor (via addition) for percent clay of clay+silt (percent)
@@ -140,10 +140,10 @@ contains
     call readNcdioScalar(ncid, 'csol_sand', subname, params_inst%csol_sand)
     ! Scale factor for bsw (unitless)
     call readNcdioScalar(ncid, 'bsw_sf', subname, params_inst%bsw_sf)
-    ! Scale factor for hksat (unitless)
-    call readNcdioScalar(ncid, 'hksat_sf', subname, params_inst%hksat_sf)
-    ! Scale factor for sucsat (unitless)
-    call readNcdioScalar(ncid, 'sucsat_sf', subname, params_inst%sucsat_sf)
+!    ! Scale factor for hksat (unitless)
+!    call readNcdioScalar(ncid, 'hksat_sf', subname, params_inst%hksat_sf)
+!    ! Scale factor for sucsat (unitless)
+!    call readNcdioScalar(ncid, 'sucsat_sf', subname, params_inst%sucsat_sf)
     ! Scale factor for watsat (unitless)
     call readNcdioScalar(ncid, 'watsat_sf', subname, params_inst%watsat_sf)
     ! Perturbation factor (via addition) for percent sand (percent)
@@ -220,6 +220,8 @@ contains
     real(r8) ,pointer  :: sand3d (:,:)                  ! read in - soil texture: percent sand (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: clay3d (:,:)                  ! read in - soil texture: percent clay (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: organic3d (:,:)               ! read in - organic matter: kg/m3 (needs to be a pointer for use in ncdio)
+    real(r8) ,pointer  :: hksat_sf (:)                  ! read in - [param] Scale factor for hksat (unitless)
+    real(r8) ,pointer  :: sucsat_sf (:)                 ! read in - [param] Scale factor for sucsat (unitless)
     character(len=256) :: locfn                         ! local filename
     integer            :: ipedof  
     integer            :: begp, endp
@@ -364,6 +366,18 @@ contains
     deallocate(gti)
 
     ! Close file
+    ! Read spatially distributed parameters - hksat_sf, sucsat_sf
+    allocate(hksat_sf(begg:endg))
+    call ncd_io(ncid=ncid, varname='hksat_sf', flag='read', data=hksat_sf, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       call endrun(msg=' ERROR: hksat_sf NOT on surfdata file'//errMsg(sourcefile, __LINE__))
+    end if
+
+    allocate(sucsat_sf(begg:endg))
+    call ncd_io(ncid=ncid, varname='sucsat_sf', flag='read', data=sucsat_sf, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       call endrun(msg=' ERROR: sucsat_sf NOT on surfdata file'//errMsg(sourcefile, __LINE__))
+    end if
 
     call ncd_pio_closefile(ncid)
 
@@ -541,7 +555,8 @@ contains
                                                       (sand+clay)+params_inst%tkm_om*om_frac ! W/(m K)
                 soilstate_inst%bsw_col(c,lev)       = params_inst%bsw_sf * ( (1._r8-om_frac) * &
                                                       (2.91_r8 + 0.159_r8*clay) + om_frac*om_b )
-                soilstate_inst%sucsat_col(c,lev)    = params_inst%sucsat_sf * ( (1._r8-om_frac) * &
+!                soilstate_inst%sucsat_col(c,lev)    = params_inst%sucsat_sf * ( (1._r8-om_frac) * &
+                soilstate_inst%sucsat_col(c,lev)    = sucsat_sf(g) * ( (1._r8-om_frac) * &
                                                       soilstate_inst%sucsat_col(c,lev) + om_sucsat*om_frac ) 
                 soilstate_inst%hksat_min_col(c,lev) = xksat
 
@@ -563,7 +578,8 @@ contains
                 else
                    uncon_hksat = 0._r8
                 end if
-                soilstate_inst%hksat_col(c,lev)  = params_inst%hksat_sf * ( uncon_frac*uncon_hksat + &
+!                soilstate_inst%hksat_col(c,lev)  = params_inst%hksat_sf * ( uncon_frac*uncon_hksat + &
+                soilstate_inst%hksat_col(c,lev)  = hksat_sf(g) * ( uncon_frac*uncon_hksat + &
                                                    (perc_frac*om_frac)*om_hksat )
 
                 soilstate_inst%tkmg_col(c,lev)   = tkm ** (1._r8- soilstate_inst%watsat_col(c,lev))           
@@ -646,7 +662,8 @@ contains
              soilstate_inst%bsw_col(c,lev)    = params_inst%bsw_sf * ( (1._r8-om_frac) * &
                    (2.91_r8 + 0.159_r8*clay) + om_frac * om_b_lake )
 
-             soilstate_inst%sucsat_col(c,lev) = params_inst%sucsat_sf * ( (1._r8-om_frac) * &
+!             soilstate_inst%sucsat_col(c,lev) = params_inst%sucsat_sf * ( (1._r8-om_frac) * &
+             soilstate_inst%sucsat_col(c,lev) = sucsat_sf(g) * ( (1._r8-om_frac) * &
                    soilstate_inst%sucsat_col(c,lev) + om_sucsat_lake * om_frac )
 
              xksat = 0.0070556 *( 10.**(-0.884+0.0153*sand) ) ! mm/s
@@ -670,7 +687,8 @@ contains
                 uncon_hksat = 0._r8
              end if
 
-             soilstate_inst%hksat_col(c,lev)  = params_inst%hksat_sf * ( uncon_frac*uncon_hksat + &
+!             soilstate_inst%hksat_col(c,lev)  = params_inst%hksat_sf * ( uncon_frac*uncon_hksat + &
+             soilstate_inst%hksat_col(c,lev)  = hksat_sf(g) * ( uncon_frac*uncon_hksat + &
                                        (perc_frac*om_frac)*om_hksat_lake )
              soilstate_inst%tkmg_col(c,lev)   = tkm ** (1._r8- soilstate_inst%watsat_col(c,lev))
              soilstate_inst%tksatu_col(c,lev) = soilstate_inst%tkmg_col(c,lev)*0.57_r8**soilstate_inst%watsat_col(c,lev)
@@ -710,6 +728,7 @@ contains
 
     deallocate(sand3d, clay3d, organic3d)
     deallocate(zisoifl, zsoifl)
+    deallocate(hksat_sf, sucsat_sf)    
 
   end subroutine SoilStateInitTimeConst
 

@@ -291,7 +291,7 @@ contains
     type(file_desc_t)       , intent(inout) :: params_ncid ! pio netCDF file id for parameter file
     !
     ! !LOCAL VARIABLES:
-    real(r8)                                :: n_melt_coef    ! n_melt parameter (unitless)
+!    real(r8)                                :: n_melt_coef    ! n_melt parameter (unitless)
     real(r8) :: n_melt_glcmec  ! SCA shape parameter for glc_mec columns
 
     character(len=*), parameter :: subname = 'Init'
@@ -301,9 +301,10 @@ contains
          NLFilename = NLFilename, &
          n_melt_glcmec = n_melt_glcmec)
 
+!    n_melt_coef has been read in ./main/initVerticalMod.F90
     call this%ReadParams( &
-         params_ncid = params_ncid, &
-         n_melt_coef = n_melt_coef)
+         params_ncid = params_ncid )
+!         n_melt_coef = n_melt_coef)
 
     if (masterproc) then
        call this%CheckValidInputs( &
@@ -314,8 +315,8 @@ contains
          bounds        = bounds, &
          col           = col, &
          glc_behavior  = glc_behavior, &
-         n_melt_coef   = n_melt_coef, &
          n_melt_glcmec = n_melt_glcmec)
+!         n_melt_coef   = col%n_melt_coef, &
 
   end subroutine Init
 
@@ -377,7 +378,8 @@ contains
   end subroutine ReadNamelist
 
   !-----------------------------------------------------------------------
-  subroutine ReadParams(this, params_ncid, n_melt_coef)
+!  subroutine ReadParams(this, params_ncid, n_melt_coef)
+  subroutine ReadParams(this, params_ncid)
     !
     ! !DESCRIPTION:
     ! Read netCDF parameters needed for the SwensonLawrence2012 method
@@ -385,7 +387,7 @@ contains
     ! !ARGUMENTS:
     class(snow_cover_fraction_swenson_lawrence_2012_type), intent(inout) :: this
     type(file_desc_t) , intent(inout) :: params_ncid ! pio netCDF file id for parameter file
-    real(r8)          , intent(out)   :: n_melt_coef ! n_melt parameter (unitless)
+!    real(r8)          , intent(out)   :: n_melt_coef ! n_melt parameter (unitless)
     !
     ! !LOCAL VARIABLES:
 
@@ -395,8 +397,8 @@ contains
     ! Accumulation constant for fractional snow covered area (unitless)
     call readNcdioScalar(params_ncid, 'accum_factor', subname, this%accum_factor)
 
-    ! n_melt parameter (unitless)
-    call readNcdioScalar(params_ncid, 'n_melt_coef', subname, n_melt_coef)
+!    ! n_melt parameter (unitless)
+!    call readNcdioScalar(params_ncid, 'n_melt_coef', subname, n_melt_coef)
 
   end subroutine ReadParams
 
@@ -430,7 +432,8 @@ contains
   end subroutine CheckValidInputs
 
   !-----------------------------------------------------------------------
-  subroutine SetDerivedParameters(this, bounds, col, glc_behavior, n_melt_coef, n_melt_glcmec)
+!  subroutine SetDerivedParameters(this, bounds, col, glc_behavior, n_melt_coef, n_melt_glcmec)
+  subroutine SetDerivedParameters(this, bounds, col, glc_behavior, n_melt_glcmec)
     !
     ! !DESCRIPTION:
     ! Set parameters that are derived from other inputs
@@ -440,7 +443,7 @@ contains
     type(bounds_type)       , intent(in) :: bounds
     type(column_type)       , intent(in) :: col
     type(glc_behavior_type) , intent(in) :: glc_behavior
-    real(r8)                , intent(in) :: n_melt_coef
+!    real(r8)                , intent(in) :: n_melt_coef
     real(r8)                , intent(in) :: n_melt_glcmec ! SCA shape parameter for glc_mec columns
     !
     ! !LOCAL VARIABLES:
@@ -461,7 +464,7 @@ contains
           ! value of n_melt.
           this%n_melt(c) = n_melt_glcmec
        else
-          this%n_melt(c) = n_melt_coef / max(10._r8, col%topo_std(c))
+          this%n_melt(c) = col%n_melt_coef(c) / max(10._r8, col%topo_std(c))
        end if
     end do
 

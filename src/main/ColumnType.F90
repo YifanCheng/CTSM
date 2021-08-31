@@ -81,6 +81,12 @@ module ColumnType
      logical , pointer :: hydrologically_active(:)   ! true if this column is a hydrologically active type
      logical , pointer :: urbpoi               (:)   ! true=>urban point
 
+     ! spatially distribution parameters
+     real(r8), pointer :: ssi                  (:)   ! Irreducible water saturation of snow (unitless)
+     real(r8), pointer :: n_melt_coef          (:)   ! n_melt parameter (unitless)
+     real(r8), pointer :: e_ice                (:)   ! Soil ice impedance factor (unitless)
+     real(r8), pointer :: fff                  (:)   ! Decay factor for fractional saturated area (1/m)
+
      ! levgrnd_class gives the class in which each layer falls. This is relevant for
      ! columns where there are 2 or more fundamentally different layer types. For
      ! example, this distinguishes between soil and bedrock layers. The particular value
@@ -155,6 +161,12 @@ contains
     allocate(this%hydrologically_active(begc:endc))            ; this%hydrologically_active(:) = .false.
     allocate(this%urbpoi      (begc:endc))                     ; this%urbpoi      (:)   = .false.
 
+    ! Spatially distributed parameters
+    allocate(this%ssi         (begc:endc))                     ; this%ssi         (:)   = spval
+    allocate(this%n_melt_coef (begc:endc))                     ; this%n_melt_coef (:)   = spval
+    allocate(this%e_ice       (begc:endc))                     ; this%e_ice       (:)   = spval
+    allocate(this%fff         (begc:endc))                     ; this%fff         (:)   = spval
+
   end subroutine Init
 
   !------------------------------------------------------------------------
@@ -201,6 +213,11 @@ contains
     deallocate(this%hill_distance)
     deallocate(this%hill_aspect  )
     deallocate(this%urbpoi     )
+    deallocate(this%ssi        )
+    deallocate(this%n_melt_coef)
+    deallocate(this%e_ice      )
+    deallocate(this%fff        )
+
   end subroutine Clean
 
   !-----------------------------------------------------------------------

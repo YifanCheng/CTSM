@@ -64,7 +64,7 @@ module SoilHydrologyMod
      real(r8) :: aq_sp_yield_min         ! Minimum aquifer specific yield (unitless)
      real(r8) :: n_baseflow              ! Drainage power law exponent (unitless)
      real(r8) :: perched_baseflow_scalar ! Scalar multiplier for perched base flow rate (kg/m2/s)
-     real(r8) :: e_ice                   ! Soil ice impedance factor (unitless)
+!     real(r8) :: e_ice                   ! Soil ice impedance factor (unitless)
   end type params_type
   type(params_type), private ::  params_inst
   
@@ -98,8 +98,8 @@ contains
     call readNcdioScalar(ncid, 'n_baseflow', subname, params_inst%n_baseflow)
     ! Scalar multiplier for perched base flow rate (kg/m2/s)
     call readNcdioScalar(ncid, 'perched_baseflow_scalar', subname, params_inst%perched_baseflow_scalar)
-    ! Soil ice impedance factor (unitless)
-    call readNcdioScalar(ncid, 'e_ice', subname, params_inst%e_ice)
+!    ! Soil ice impedance factor (unitless)
+!    call readNcdioScalar(ncid, 'e_ice', subname, params_inst%e_ice)
 
   end subroutine readParams
 
@@ -1042,7 +1042,7 @@ contains
              wtsub = 0._r8
              q_perch = 0._r8
              do k = jwt(c)+1, k_frz
-                imped=10._r8**(-params_inst%e_ice*(0.5_r8*(icefrac(c,k)+icefrac(c,min(nlevsoi, k+1)))))
+                imped=10._r8**(-col%e_ice(c)*(0.5_r8*(icefrac(c,k)+icefrac(c,min(nlevsoi, k+1)))))
                 q_perch = q_perch + imped*hksat(c,k)*dzmm(c,k)
                 wtsub = wtsub + dzmm(c,k)
              end do
@@ -1118,7 +1118,7 @@ contains
                 wtsub = 0._r8
                 q_perch = 0._r8
                 do k = k_perch, k_frz
-                   imped=10._r8**(-params_inst%e_ice*(0.5_r8*(icefrac(c,k)+icefrac(c,min(nlevsoi, k+1)))))
+                   imped=10._r8**(-col%e_ice(c)*(0.5_r8*(icefrac(c,k)+icefrac(c,min(nlevsoi, k+1)))))
                    q_perch = q_perch + imped*hksat(c,k)*dzmm(c,k)
                    wtsub = wtsub + dzmm(c,k)
                 end do
@@ -1176,11 +1176,11 @@ contains
                 end if
              else
                 if (use_vichydro) then
-                   imped=10._r8**(-params_inst%e_ice*min(1.0_r8,ice(c,nlayer)/max_moist(c,nlayer)))
+                   imped=10._r8**(-col%e_ice(c)*min(1.0_r8,ice(c,nlayer)/max_moist(c,nlayer)))
                    dsmax_tmp(c) = Dsmax(c) * dtime/ secspday !mm/day->mm/dtime
                    rsub_top_max = dsmax_tmp(c)
                 else
-                   imped=10._r8**(-params_inst%e_ice*(icefracsum/dzsum))
+                   imped=10._r8**(-col%e_ice(c)*(icefracsum/dzsum))
                    rsub_top_max = 10._r8 * sin((rpi/180.) * col%topo_slope(c))
                 end if
              endif
@@ -1745,7 +1745,7 @@ contains
              wtsub = 0._r8
              q_perch = 0._r8
              do k = k_perch, k_frz
-                imped=10._r8**(-params_inst%e_ice*(0.5_r8*(icefrac(c,k)+icefrac(c,min(nlevsoi, k+1)))))
+                imped=10._r8**(-col%e_ice(c)*(0.5_r8*(icefrac(c,k)+icefrac(c,min(nlevsoi, k+1)))))
                 q_perch = q_perch + imped*hksat(c,k)*dzmm(c,k)
                 wtsub = wtsub + dzmm(c,k)
              end do
@@ -2289,7 +2289,7 @@ contains
              dzsum  = dzsum + dzmm(c,j)
              icefracsum = icefracsum + icefrac(c,j) * dzmm(c,j)
           end do
-          imped=10._r8**(-params_inst%e_ice*(icefracsum/dzsum))
+          imped=10._r8**(-col%e_ice(c)*(icefracsum/dzsum))
           !@@
           ! baseflow is power law expression relative to bedrock layer
           if(zwt(c) <= zi(c,nbedrock(c))) then 
@@ -2603,7 +2603,7 @@ contains
 
              vol_ice = min(watsat(c,j), h2osoi_ice(c,j)/(dz(c,j)*denice))
              icefrac(c,j) = min(1._r8,vol_ice/watsat(c,j))
-             ice_imped(c,j)=10._r8**(-params_inst%e_ice*icefrac(c,j))
+             ice_imped(c,j)=10._r8**(-col%e_ice(c)*icefrac(c,j))
           end do
        end do
 
@@ -2646,7 +2646,7 @@ contains
             dzsum  = dzsum + dzmm(c,j)
             icefracsum = icefracsum + icefrac(c,j) * dzmm(c,j)
          end do
-         ice_imped_col(c)=10._r8**(-params_inst%e_ice*(icefracsum/dzsum))         
+         ice_imped_col(c)=10._r8**(-col%e_ice(c)*(icefracsum/dzsum))         
       enddo
       
       do fc = 1, num_hillslope

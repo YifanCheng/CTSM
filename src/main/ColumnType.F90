@@ -86,6 +86,8 @@ module ColumnType
      real(r8), pointer :: n_melt_coef          (:)   ! n_melt parameter (unitless)
      real(r8), pointer :: e_ice                (:)   ! Soil ice impedance factor (unitless)
      real(r8), pointer :: fff                  (:)   ! Decay factor for fractional saturated area (1/m)
+     real(r8), pointer :: upplim_destruct_metamorph (:) ! Upper Limit on Destructive Metamorphism Compaction [kg/m3]
+     real(r8), pointer :: om_frac_sf           (:)   ! Scale factor for organic matter fraction (unitless)
 
      ! levgrnd_class gives the class in which each layer falls. This is relevant for
      ! columns where there are 2 or more fundamentally different layer types. For
@@ -166,6 +168,8 @@ contains
     allocate(this%n_melt_coef (begc:endc))                     ; this%n_melt_coef (:)   = spval
     allocate(this%e_ice       (begc:endc))                     ; this%e_ice       (:)   = spval
     allocate(this%fff         (begc:endc))                     ; this%fff         (:)   = spval
+    allocate(this%upplim_destruct_metamorph(begc:endc))        ; this%upplim_destruct_metamorph(:) = spval
+    allocate(this%om_frac_sf  (begc:endc))                     ; this%om_frac_sf  (:)   = spval
 
   end subroutine Init
 
@@ -217,7 +221,8 @@ contains
     deallocate(this%n_melt_coef)
     deallocate(this%e_ice      )
     deallocate(this%fff        )
-
+    deallocate(this%upplim_destruct_metamorph)
+    deallocate(this%om_frac_sf )
   end subroutine Clean
 
   !-----------------------------------------------------------------------

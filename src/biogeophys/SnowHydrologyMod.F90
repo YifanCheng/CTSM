@@ -210,7 +210,7 @@ contains
 
     namelist /clm_snowhydrology_inparm/ &
          wind_dependent_snow_density, snow_overburden_compaction_method, &
-         lotmp_snowdensity_method, upplim_destruct_metamorph, &
+         lotmp_snowdensity_method, upplim_destruct_metamorph, & 
          overburden_compress_Tfactor, &
          reset_snow, reset_snow_glc, reset_snow_glc_ela, &
          snow_dzmin_1, snow_dzmax_l_1, snow_dzmax_u_1, &
@@ -1946,7 +1946,7 @@ contains
                 ! Settling as a result of destructive metamorphism
 
                 ddz1 = -c3*dexpf
-                if (bi > upplim_destruct_metamorph) ddz1 = ddz1*exp(-46.0e-3_r8*(bi-upplim_destruct_metamorph))
+                if (bi > col%upplim_destruct_metamorph(c)) ddz1 = ddz1*exp(-46.0e-3_r8*(bi-col%upplim_destruct_metamorph(c)))
 
                 ! Liquid water term
 

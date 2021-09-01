@@ -122,6 +122,7 @@ contains
     real(r8) ,pointer     :: hydro_e_ice   (:) ! read in params - e_ice
     real(r8) ,pointer     :: hydro_fff     (:) ! read in params - fff
     real(r8) ,pointer     :: slopebeta     (:) ! read in params - slopebeta
+    real(r8) ,pointer     :: snowhydro_upp_dst_meta(:) ! read in params - upplim_destruct_metamorph
 
     ! Possible values for levgrnd_class. The important thing is that, for a given column,
     ! layers that are fundamentally different (e.g., soil vs bedrock) have different
@@ -772,6 +773,20 @@ contains
        col%fff(c) = hydro_fff(g)
     end do
     deallocate(hydro_fff)
+
+    allocate(snowhydro_upp_dst_meta(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='upplim_destruct_metamorph', flag='read', data=snowhydro_upp_dst_meta, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       call shr_sys_abort(' ERROR: upplim_destruct_metamorph NOT on surfdata file'//&
+            errMsg(sourcefile, __LINE__))
+    end if
+    do c = begc,endc
+       g = col%gridcell(c)
+       ! check for near zero slopes, set minimum value
+       col%upplim_destruct_metamorph(c) = snowhydro_upp_dst_meta(g)
+    end do
+    deallocate(snowhydro_upp_dst_meta)
+
 
     !-----------------------------------------------
     ! SCA shape function defined

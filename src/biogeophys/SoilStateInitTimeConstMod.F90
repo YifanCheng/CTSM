@@ -40,7 +40,7 @@ module SoilStateInitTimeConstMod
      real(r8) :: watsat_sf           ! Scale factor for watsat (unitless)
      real(r8) :: sand_pf             ! Perturbation factor (via addition) for percent sand (percent)
      real(r8) :: clay_pf             ! Perturbation factor (via addition) for percent clay of clay+silt (percent)
-     real(r8) :: om_frac_sf          ! Scale factor for organic matter fraction (unitless)
+!     real(r8) :: om_frac_sf          ! Scale factor for organic matter fraction (unitless)
   end type params_type
   type(params_type), private ::  params_inst
 
@@ -150,8 +150,8 @@ contains
     call readNcdioScalar(ncid, 'sand_pf', subname, params_inst%sand_pf)
     ! Perturbation factor  (via addition) for percent clay of clay+silt (percent)
     call readNcdioScalar(ncid, 'clay_pf', subname, params_inst%clay_pf)
-    ! Scale factor for organic matter fraction (unitless)
-    call readNcdioScalar(ncid, 'om_frac_sf', subname, params_inst%om_frac_sf)
+!    ! Scale factor for organic matter fraction (unitless)
+!    call readNcdioScalar(ncid, 'om_frac_sf', subname, params_inst%om_frac_sf)
 
   end subroutine readParams
 
@@ -222,6 +222,7 @@ contains
     real(r8) ,pointer  :: organic3d (:,:)               ! read in - organic matter: kg/m3 (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: hksat_sf (:)                  ! read in - [param] Scale factor for hksat (unitless)
     real(r8) ,pointer  :: sucsat_sf (:)                 ! read in - [param] Scale factor for sucsat (unitless)
+    real(r8) ,pointer  :: soil_om_frac_sf(:)            ! read in - [param] Scale factor for organic matter fraction (unitless)
     character(len=256) :: locfn                         ! local filename
     integer            :: ipedof  
     integer            :: begp, endp
@@ -379,6 +380,17 @@ contains
        call endrun(msg=' ERROR: sucsat_sf NOT on surfdata file'//errMsg(sourcefile, __LINE__))
     end if
 
+    allocate(soil_om_frac_sf(begg:endg))
+    call ncd_io(ncid=ncid, varname='om_frac_sf', flag='read', data=soil_om_frac_sf, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       call endrun(msg=' ERROR: om_frac_sf NOT on surfdata file'//errMsg(sourcefile, __LINE__))
+    end if
+    do c = begc, endc
+       g = col%gridcell(c)
+       col%om_frac_sf(c) = soil_om_frac_sf(g)
+    end do
+    deallocate(soil_om_frac_sf)
+
     call ncd_pio_closefile(ncid)
 
     ! --------------------------------------------------------------------
@@ -456,20 +468,20 @@ contains
              if (lev .eq. 1) then
                 clay = clay3d(g,1)
                 sand = sand3d(g,1)
-                om_frac = min(params_inst%om_frac_sf*organic3d(g,1)/organic_max, 1._r8)
+                om_frac = min(col%om_frac_sf(c)*organic3d(g,1)/organic_max, 1._r8)
              else if (lev <= nlevsoi) then
                 found = 0  ! reset value
                 if (zsoi(lev) <= zisoifl(1)) then
                    ! Search above the dataset's range of zisoifl depths
                    clay = clay3d(g,1)
                    sand = sand3d(g,1)
-                   om_frac = min(params_inst%om_frac_sf*organic3d(g,1)/organic_max, 1._r8)
+                   om_frac = min(col%om_frac_sf(c)*organic3d(g,1)/organic_max, 1._r8)
                    found = 1
                 else if (zsoi(lev) > zisoifl(nlevsoifl)) then
                    ! Search below the dataset's range of zisoifl depths
                    clay = clay3d(g,nlevsoifl)
                    sand = sand3d(g,nlevsoifl)
-                   om_frac = min(params_inst%om_frac_sf*organic3d(g,nlevsoifl)/organic_max, 1._r8)
+                   om_frac = min(col%om_frac_sf(c)*organic3d(g,nlevsoifl)/organic_max, 1._r8)
                    found = 1
                 else
                    ! For remaining model soil levels, search within dataset's
@@ -479,7 +491,7 @@ contains
                       if (zsoi(lev) > zisoifl(j) .AND. zsoi(lev) <= zisoifl(j+1)) then
                          clay = clay3d(g,j+1)
                          sand = sand3d(g,j+1)
-                         om_frac = min(params_inst%om_frac_sf*organic3d(g,j+1)/organic_max, 1._r8)
+                         om_frac = min(col%om_frac_sf(c)*organic3d(g,j+1)/organic_max, 1._r8)
                          found = 1
                       endif
                       if (found == 1) exit  ! no need to stay in the loop
@@ -634,9 +646,9 @@ contains
                 clay    =  soilstate_inst%cellclay_col(c,lev)
                 sand    =  soilstate_inst%cellsand_col(c,lev)
                 if ( organic_frac_squared )then
-                   om_frac = min(params_inst%om_frac_sf*((soilstate_inst%cellorg_col(c,lev)/organic_max)**2._r8), 1._r8)
+                   om_frac = min(col%om_frac_sf(c)*((soilstate_inst%cellorg_col(c,lev)/organic_max)**2._r8), 1._r8)
                 else
-                   om_frac = min(params_inst%om_frac_sf*soilstate_inst%cellorg_col(c,lev)/organic_max, 1._r8)
+                   om_frac = min(col%om_frac_sf(c)*soilstate_inst%cellorg_col(c,lev)/organic_max, 1._r8)
                 end if
              else
                 clay    = soilstate_inst%cellclay_col(c,nlevsoi)

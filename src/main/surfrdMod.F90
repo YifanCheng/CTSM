@@ -10,7 +10,7 @@ module surfrdMod
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use abortutils      , only : endrun
-  use clm_varpar      , only : nlevsoifl, maxveg, maxsoil_patches
+  use clm_varpar      , only : nlevsoifl, maxveg, maxsoil_patches, mxpft
   use landunit_varcon , only : numurbl
   use clm_varcon      , only : grlnd
   use clm_varctl      , only : iulog
@@ -19,6 +19,7 @@ module surfrdMod
   use surfrdUtilsMod  , only : collapse_to_dominant, collapse_crop_var, collapse_individual_lunits
   use ncdio_pio       , only : file_desc_t, var_desc_t, ncd_pio_openfile, ncd_pio_closefile
   use ncdio_pio       , only : ncd_io, check_var, ncd_inqfdims, check_dim_size, ncd_inqdid, ncd_inqdlen
+  use GridcellType    , only : grc
   use pio
   use spmdMod
   !
@@ -192,7 +193,7 @@ contains
 
     ! read in pft-dependent spatially distributed parameters 
     ! from parameter files (singla value globally) to surface dataset
-    call surfrd_param_pft_depend(begg, endg, ncid) 
+!    call surfrd_param_pft_depend(begg, endg, ncid) 
 
     ! Obtain hillslope hydrology info
     if(use_hillslope) then 
@@ -748,42 +749,42 @@ contains
   end subroutine surfrd_veg_dgvm
 
   !-----------------------------------------------------------------------
-  subroutine surfrd_param_pft_depend(begg, endg, ncid)
+!  subroutine surfrd_param_pft_depend(begg, endg, ncid)
     !
     ! !DESCRIPTION:
     ! Read in the parameters in surface dataset, which is both spatially 
     ! distributed and pft dependent 
     !
     ! !USES:
-    use clm_instur, only : medlynintercept
+!    use clm_instur, only : medlynintercept
     !
     ! !ARGUMENTS:
-    integer, intent(in) :: begg, endg
-    type(file_desc_t),intent(inout) :: ncid   ! netcdf id
+!    integer, intent(in) :: begg, endg
+!    type(file_desc_t),intent(inout) :: ncid   ! netcdf id
     !
     ! !LOCAL VARIABLES:
-    logical  :: readvar                        ! is variable on dataset
-    integer  :: ier                            ! error code
-    real(r8) ,pointer :: arrayl(:,:)           ! local array
-    character(len=32) :: subname = 'surfrd_param_pft_depend'  ! subroutine name
+!    logical  :: readvar                        ! is variable on dataset
+!    integer  :: ier                            ! error code
+!    real(r8) ,pointer :: arrayl(:,:)           ! local array
+!    character(len=32) :: subname = 'surfrd_param_pft_depend'  ! subroutine name
 !-----------------------------------------------------------------------
-    call check_dim_size(ncid, 'lsmpft', maxsoil_patches)
-    allocate(arrayl(begg:endg,0:maxveg))
-    if (ier /= 0) then
-       write(iulog,*)subname, 'allocation error '
-       call endrun(msg=errMsg(sourcefile, __LINE__))
-    end if
+!    call check_dim_size(ncid, 'maxpft', mxpft+1)
+!    allocate(arrayl(begg:endg,0:mxpft))
+!    if (ier /= 0) then
+!       write(iulog,*)subname, 'allocation error '
+!       call endrun(msg=errMsg(sourcefile, __LINE__))
+!    end if
 
-    call ncd_io(ncid=ncid, varname='medlynintercept', flag='read', data=arrayl, &
-         dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) then
-       write(iulog,*)'surfrd error: nhillcolumns not on surface data file'
-    else
-       medlynintercept(begg:endg,0:maxveg) = arrayl(begg:endg,0:maxveg)
-    endif
-    deallocate(arrayl)
+!    call ncd_io(ncid=ncid, varname='medlynintercept', flag='read', data=arrayl, &
+!         dim1name=grlnd, readvar=readvar)
+!    if (.not. readvar) then
+!       write(iulog,*)'surfrd error: nhillcolumns not on surface data file'
+!    else
+!       medlynintercept(begg:endg,0:mxpft) = arrayl(begg:endg,0:mxpft)
+!    endif
+!    deallocate(arrayl)
 
-  end subroutine surfrd_param_pft_depend
+!  end subroutine surfrd_param_pft_depend
 
 
   !-----------------------------------------------------------------------

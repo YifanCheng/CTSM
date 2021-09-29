@@ -15,7 +15,7 @@ module clm_initializeMod
   use clm_varctl            , only : use_lch4, use_cn, use_cndv, use_c13, use_c14, use_fates
   use clm_varctl            , only : nhillslope
   use clm_varctl            , only : use_soil_moisture_streams
-  use clm_instur            , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, fert_cft,medlynintercept
+  use clm_instur            , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, fert_cft !, medlynintercept
   use clm_instur            , only : irrig_method, wt_glc_mec, topo_glc_mec, haslake, ncol_per_hillslope
   use perf_mod              , only : t_startf, t_stopf
   use readParamsMod         , only : readParameters
@@ -118,7 +118,7 @@ contains
     ! !USES:
     use clm_varcon                    , only : spval
     use clm_varpar                    , only : natpft_lb, natpft_ub, cft_lb, cft_ub, maxpatch_glcmec
-    use clm_varpar                    , only : nlevsno, maxveg
+    use clm_varpar                    , only : nlevsno, maxveg, mxpft
     use clm_varctl                    , only : fsurdat
     use clm_varctl                    , only : finidat, finidat_interp_source, finidat_interp_dest, fsurdat
     use clm_varctl                    , only : use_century_decomp, use_cn, use_fates
@@ -220,7 +220,7 @@ contains
     allocate (wt_glc_mec   (begg:endg, maxpatch_glcmec     ))
     allocate (topo_glc_mec (begg:endg, maxpatch_glcmec     ))
     allocate (haslake      (begg:endg                      ))
-    allocate (medlynintercept  (begg:endg, 0:maxveg        ))
+!    allocate (medlynintercept  (begg:endg, 0:mxpft         ))
     if(use_hillslope) then 
        allocate (ncol_per_hillslope  (begg:endg                      ))
     endif
@@ -292,7 +292,7 @@ contains
     ! Deallocate surface grid dynamic memory for variables that aren't needed elsewhere.
     ! Some things are kept until the end of initialize2; urban_valid is kept through the
     ! end of the run for error checking.
-    deallocate (wt_lunit, wt_cft, wt_glc_mec, haslake, medlynintercept)
+    deallocate (wt_lunit, wt_cft, wt_glc_mec, haslake) !, medlynintercept)
     if(use_hillslope)  deallocate (ncol_per_hillslope)
 
     ! Determine processor bounds and clumps for this processor

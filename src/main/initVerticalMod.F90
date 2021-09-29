@@ -12,7 +12,7 @@ module initVerticalMod
   use shr_sys_mod       , only : shr_sys_abort
   use decompMod         , only : bounds_type
   use spmdMod           , only : masterproc
-  use clm_varpar        , only : nlevsno, nlevgrnd, nlevlak
+  use clm_varpar        , only : nlevsno, nlevgrnd, nlevlak, mxpft
   use clm_varpar        , only : toplev_equalspace, nlev_equalspace
   use clm_varpar        , only : nlevsoi, nlevsoifl, nlevurb, nlevmaxurbgrnd
   use clm_varctl        , only : fsurdat, iulog
@@ -123,6 +123,7 @@ contains
     real(r8) ,pointer     :: hydro_fff     (:) ! read in params - fff
     real(r8) ,pointer     :: slopebeta     (:) ! read in params - slopebeta
     real(r8) ,pointer     :: snowhydro_upp_dst_meta(:) ! read in params - upplim_destruct_metamorph
+    real(r8) ,pointer     :: temp_medlynintercept  (:,:) ! read in params - medlyninterceipt
 
     ! Possible values for levgrnd_class. The important thing is that, for a given column,
     ! layers that are fundamentally different (e.g., soil vs bedrock) have different
@@ -806,6 +807,18 @@ contains
        col%micro_sigma(c) = (col%topo_slope(c) + slope0)**(slopebeta(g))
     end do
     deallocate(slopebeta)
+
+    ! read in medlynintercept - pft-denpendent variables
+    call check_dim_size(ncid, 'maxpft', mxpft+1)
+    allocate(temp_medlynintercept(bounds%begg:bounds%endg, 0:mxpft))
+    call ncd_io(ncid=ncid, varname='medlynintercept', flag='read', data=temp_medlynintercept, &
+         dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       write(iulog,*)'surfrd error: medlynintercept not on surface data file'
+    else
+       grc%medlynintercept(bounds%begg:bounds%endg,0:mxpft) = temp_medlynintercept(bounds%begg:bounds%endg,0:mxpft)
+    endif
+    deallocate(temp_medlynintercept)
 
     call ncd_pio_closefile(ncid)
 

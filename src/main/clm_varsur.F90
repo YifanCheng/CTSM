@@ -55,7 +55,7 @@ module clm_instur
   ! spatially distributed parameters
   ! medlynintercept - Medlyn equation intercept used in Photosynthesis
   ! first dimension is grid, second dimension is (0:mxpft)
-  real(r8), pointer :: medlynintercept(:,:)
+!  real(r8), pointer :: medlynintercept(:,:)
 
   !-----------------------------------------------------------------------
 

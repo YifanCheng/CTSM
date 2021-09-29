@@ -2497,7 +2497,7 @@ contains
     use pftconMod         , only : nbrdlf_dcd_tmp_shrub, npcropmin
     use ColumnType        , only : col
     use shr_infnan_mod    , only : shr_infnan_isnan
-    use clm_instur        , only : medlynintercept
+!    use clm_instur        , only : medlynintercept
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -2729,7 +2729,7 @@ contains
          i_flnr     => pftcon%i_flnr                         , & ! Input:  [real(r8) (:)   ]  
          s_flnr     => pftcon%s_flnr                         , & ! Input:  [real(r8) (:)   ]  
          mbbopt     => pftcon%mbbopt                         , & 
-!         medlynintercept=> pftcon%medlynintercept            , & ! Input:  [real(r8) (:)   ]  Intercept for Medlyn stomatal conductance model method
+         medlynintercept=> grc%medlynintercept            , & ! Input:  [real(r8) (:)   ]  Intercept for Medlyn stomatal conductance model method
          medlynslope=> pftcon%medlynslope                    , & ! Input:  [real(r8) (:)   ]  Slope for Medlyn stomatal conductance model method
          forc_pbot  => atm2lnd_inst%forc_pbot_downscaled_col , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)
          ivt        => patch%itype                           , & ! Input:  [integer  (:)   ]  patch vegetation type
@@ -3994,7 +3994,7 @@ contains
     !
     ! !USES:
     use clm_varpar        , only : nlevsoi
-    use clm_instur        , only : medlynintercept
+!    use clm_instur        , only : medlynintercept
     implicit none
     !
     ! !ARGUMENTS:
@@ -4038,7 +4038,7 @@ contains
          c3flag     => photosyns_inst%c3flag_patch           , & ! Input:  [logical  (:)   ]    true if C3 and false if C4
          ivt        => patch%itype                           , & ! Input:  [integer  (:)   ]  patch vegetation type
          medlynslope=> pftcon%medlynslope                    , & ! Input:  [real(r8) (:)   ]  Slope for Medlyn stomatal conductance model method
-!         medlynintercept=> pftcon%medlynintercept            , & ! Input:  [real(r8) (:)   ]  Intercept for Medlyn stomatal conductance model method
+         medlynintercept=> grc%medlynintercept            , & ! Input:  [real(r8) (:)   ]  Intercept for Medlyn stomatal conductance model method
          stomatalcond_mtd=> photosyns_inst%stomatalcond_mtd  , & ! Input:  [integer        ]  method type to use for stomatal conductance.GC.fnlprmsn15_r22845
          ac         => photosyns_inst%ac_phs_patch           , & ! Output: [real(r8) (:,:,:) ]  Rubisco-limited gross photosynthesis (umol CO2/m**2/s)
          aj         => photosyns_inst%aj_phs_patch           , & ! Output: [real(r8) (:,:,:) ]  RuBP-limited gross photosynthesis (umol CO2/m**2/s)

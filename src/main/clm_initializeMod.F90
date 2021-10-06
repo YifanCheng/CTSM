@@ -220,7 +220,6 @@ contains
     allocate (wt_glc_mec   (begg:endg, maxpatch_glcmec     ))
     allocate (topo_glc_mec (begg:endg, maxpatch_glcmec     ))
     allocate (haslake      (begg:endg                      ))
-!    allocate (medlynintercept  (begg:endg, 0:mxpft         ))
     if(use_hillslope) then 
        allocate (ncol_per_hillslope  (begg:endg                      ))
     endif
@@ -292,7 +291,7 @@ contains
     ! Deallocate surface grid dynamic memory for variables that aren't needed elsewhere.
     ! Some things are kept until the end of initialize2; urban_valid is kept through the
     ! end of the run for error checking.
-    deallocate (wt_lunit, wt_cft, wt_glc_mec, haslake) !, medlynintercept)
+    deallocate (wt_lunit, wt_cft, wt_glc_mec, haslake)
     if(use_hillslope)  deallocate (ncol_per_hillslope)
 
     ! Determine processor bounds and clumps for this processor

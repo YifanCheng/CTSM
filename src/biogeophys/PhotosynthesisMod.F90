@@ -2497,7 +2497,6 @@ contains
     use pftconMod         , only : nbrdlf_dcd_tmp_shrub, npcropmin
     use ColumnType        , only : col
     use shr_infnan_mod    , only : shr_infnan_isnan
-!    use clm_instur        , only : medlynintercept
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -3994,7 +3993,7 @@ contains
     !
     ! !USES:
     use clm_varpar        , only : nlevsoi
-!    use clm_instur        , only : medlynintercept
+
     implicit none
     !
     ! !ARGUMENTS:

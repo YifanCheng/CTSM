@@ -191,10 +191,6 @@ contains
 
     call surfrd_veg_all(begg, endg, ncid, ldomain%ns, actual_numcft)
 
-    ! read in pft-dependent spatially distributed parameters 
-    ! from parameter files (singla value globally) to surface dataset
-!    call surfrd_param_pft_depend(begg, endg, ncid) 
-
     ! Obtain hillslope hydrology info
     if(use_hillslope) then 
        call surfrd_hillslope(begg, endg, ncid, ldomain%ns)
@@ -747,45 +743,6 @@ contains
     call check_sums_equal_1(wt_nat_patch, begg, 'wt_nat_patch', subname)
 
   end subroutine surfrd_veg_dgvm
-
-  !-----------------------------------------------------------------------
-!  subroutine surfrd_param_pft_depend(begg, endg, ncid)
-    !
-    ! !DESCRIPTION:
-    ! Read in the parameters in surface dataset, which is both spatially 
-    ! distributed and pft dependent 
-    !
-    ! !USES:
-!    use clm_instur, only : medlynintercept
-    !
-    ! !ARGUMENTS:
-!    integer, intent(in) :: begg, endg
-!    type(file_desc_t),intent(inout) :: ncid   ! netcdf id
-    !
-    ! !LOCAL VARIABLES:
-!    logical  :: readvar                        ! is variable on dataset
-!    integer  :: ier                            ! error code
-!    real(r8) ,pointer :: arrayl(:,:)           ! local array
-!    character(len=32) :: subname = 'surfrd_param_pft_depend'  ! subroutine name
-!-----------------------------------------------------------------------
-!    call check_dim_size(ncid, 'maxpft', mxpft+1)
-!    allocate(arrayl(begg:endg,0:mxpft))
-!    if (ier /= 0) then
-!       write(iulog,*)subname, 'allocation error '
-!       call endrun(msg=errMsg(sourcefile, __LINE__))
-!    end if
-
-!    call ncd_io(ncid=ncid, varname='medlynintercept', flag='read', data=arrayl, &
-!         dim1name=grlnd, readvar=readvar)
-!    if (.not. readvar) then
-!       write(iulog,*)'surfrd error: nhillcolumns not on surface data file'
-!    else
-!       medlynintercept(begg:endg,0:mxpft) = arrayl(begg:endg,0:mxpft)
-!    endif
-!    deallocate(arrayl)
-
-!  end subroutine surfrd_param_pft_depend
-
 
   !-----------------------------------------------------------------------
   subroutine surfrd_hillslope(begg, endg, ncid, ns)

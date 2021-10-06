@@ -52,11 +52,6 @@ module clm_instur
   ! subgrid hillslope hydrology constituents
   integer, pointer :: ncol_per_hillslope(:) 
 
-  ! spatially distributed parameters
-  ! medlynintercept - Medlyn equation intercept used in Photosynthesis
-  ! first dimension is grid, second dimension is (0:mxpft)
-!  real(r8), pointer :: medlynintercept(:,:)
-
   !-----------------------------------------------------------------------
 
 end module clm_instur

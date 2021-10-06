@@ -1415,12 +1415,12 @@ contains
          nsubsteps(c) = nsubstep
 
 ! check for negative moisture values
-         do j = 2, nlayers
-            if(h2osoi_liq(c,j) < -1e-6_r8) then
-               write(*,*) 'layer, h2osoi_liq: ', c,j,h2osoi_liq(c,j)
-               !      call endrun(subname // ':: negative soil moisture values found!')
-            endif
-         end do
+!         do j = 2, nlayers
+!            if(h2osoi_liq(c,j) < -1e-6_r8) then
+!               write(*,*) 'layer, h2osoi_liq: ', c,j,h2osoi_liq(c,j)
+!               !      call endrun(subname // ':: negative soil moisture values found!')
+!            endif
+!         end do
 
       end do  ! spatial loop
 

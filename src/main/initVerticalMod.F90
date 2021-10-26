@@ -45,8 +45,11 @@ module initVerticalMod
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: hasBedrock  ! true if the given column type includes bedrock layers
   type, private :: params_type
-!     real(r8) :: slopebeta      ! exponent for microtopography pdf sigma (unitless)
+     real(r8) :: slopebeta      ! exponent for microtopography pdf sigma (unitless)
      real(r8) :: slopemax       ! max topographic slope for microtopography pdf sigma (unitless)
+     real(r8) :: e_ice          ! Soil ice impedance factor (unitless)
+     real(r8) :: fff            ! Decay factor for fractional saturated area (1/m)
+     real(r8) :: ssi            ! Irreducible water saturation of snow (unitless) 
   end type params_type
   type(params_type), private ::  params_inst
   !
@@ -74,11 +77,14 @@ contains
     character(len=*), parameter :: subname = 'readParams_initVertical'
     !--------------------------------------------------------------------
 
-!    ! Exponent for microtopography pdf sigma (unitless)
-!    call readNcdioScalar(ncid, 'slopebeta', subname, params_inst%slopebeta)
+    ! Exponent for microtopography pdf sigma (unitless)
+    call readNcdioScalar(ncid, 'slopebeta', subname, params_inst%slopebeta)
     ! Max topographic slope for microtopography pdf sigma (unitless) 
     call readNcdioScalar(ncid, 'slopemax', subname, params_inst%slopemax)
-
+    ! e_ice
+    call readNcdioScalar(ncid, 'e_ice', subname, params_inst%e_ice)
+    call readNcdioScalar(ncid, 'fff', subname, params_inst%fff)
+    call readNcdioScalar(ncid, 'ssi', subname, params_inst%ssi)
   end subroutine readParams
 
   !------------------------------------------------------------------------
@@ -121,7 +127,7 @@ contains
     real(r8) ,pointer     :: snowhydro_n_melt_coef (:) ! read in params - n_melt_coef
     real(r8) ,pointer     :: hydro_e_ice   (:) ! read in params - e_ice
     real(r8) ,pointer     :: hydro_fff     (:) ! read in params - fff
-    real(r8) ,pointer     :: slopebeta     (:) ! read in params - slopebeta
+    real(r8) ,pointer     :: slopebeta_2d  (:) ! read in params - slopebeta
     real(r8) ,pointer     :: snowhydro_upp_dst_meta(:) ! read in params - upplim_destruct_metamorph
     real(r8) ,pointer     :: temp_medlynintercept  (:,:) ! read in params - medlyninterceipt
 
@@ -726,14 +732,18 @@ contains
     allocate(snowhydro_ssi(bounds%begg:bounds%endg))
     call ncd_io(ncid=ncid, varname='ssi', flag='read', data=snowhydro_ssi, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
-       call shr_sys_abort(' ERROR: ssi NOT on surfdata file'//&
-            errMsg(sourcefile, __LINE__))
+!       call shr_sys_abort(' ERROR: ssi NOT on surfdata file'//&
+!            errMsg(sourcefile, __LINE__))
+       col%ssi(:) = params_inst%ssi
+       write(iulog,*) "source of param - ssi is: parameter file"
+    else
+       do c = begc,endc
+          g = col%gridcell(c)
+          ! check for near zero slopes, set minimum value
+          col%ssi(c) = snowhydro_ssi(g) 
+       end do
+       write(iulog,*) "source of param - ssi is: surface data file"
     end if
-    do c = begc,endc
-       g = col%gridcell(c)
-       ! check for near zero slopes, set minimum value
-       col%ssi(c) = snowhydro_ssi(g) 
-    end do
     deallocate(snowhydro_ssi)
 
     allocate(snowhydro_n_melt_coef(bounds%begg:bounds%endg))
@@ -752,27 +762,35 @@ contains
     allocate(hydro_e_ice(bounds%begg:bounds%endg))
     call ncd_io(ncid=ncid, varname='e_ice', flag='read', data=hydro_e_ice, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
-       call shr_sys_abort(' ERROR: e_ice NOT on surfdata file'//&
-            errMsg(sourcefile, __LINE__))
+!       call shr_sys_abort(' ERROR: e_ice NOT on surfdata file'//&
+!            errMsg(sourcefile, __LINE__))
+       col%e_ice(:) = params_inst%e_ice
+       write(iulog,*) "source of param - e_ice is: parameter file" 
+    else
+       do c = begc,endc
+          g = col%gridcell(c)
+          ! check for near zero slopes, set minimum value
+          col%e_ice(c) = hydro_e_ice(g)
+       end do
+        write(iulog,*) "source of param - e_ice is: surface data file"
     end if
-    do c = begc,endc
-       g = col%gridcell(c)
-       ! check for near zero slopes, set minimum value
-       col%e_ice(c) = hydro_e_ice(g)
-    end do
     deallocate(hydro_e_ice)
 
     allocate(hydro_fff(bounds%begg:bounds%endg))
     call ncd_io(ncid=ncid, varname='fff', flag='read', data=hydro_fff, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
-       call shr_sys_abort(' ERROR: fff NOT on surfdata file'//&
-            errMsg(sourcefile, __LINE__))
+!       call shr_sys_abort(' ERROR: fff NOT on surfdata file'//&
+!            errMsg(sourcefile, __LINE__))
+       col%fff(:) = params_inst%fff
+       write(iulog,*) "source of param - fff is: parameter file"
+    else
+       do c = begc,endc
+          g = col%gridcell(c)
+          ! check for near zero slopes, set minimum value
+          col%fff(c) = hydro_fff(g)
+       end do
+       write(iulog,*) "source of param - fff is: surface data file"
     end if
-    do c = begc,endc
-       g = col%gridcell(c)
-       ! check for near zero slopes, set minimum value
-       col%fff(c) = hydro_fff(g)
-    end do
     deallocate(hydro_fff)
 
     allocate(snowhydro_upp_dst_meta(bounds%begg:bounds%endg))
@@ -793,20 +811,28 @@ contains
     ! SCA shape function defined
     !-----------------------------------------------
     
-    allocate(slopebeta(bounds%begg:bounds%endg))
-    call ncd_io(ncid=ncid, varname='slopebeta', flag='read', data=slopebeta, dim1name=grlnd, readvar=readvar)
+    allocate(slopebeta_2d(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='slopebeta', flag='read', data=slopebeta_2d, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
-       call shr_sys_abort(' ERROR: slopebeta NOT on surfdata file'//&
-            errMsg(sourcefile, __LINE__))
+!       call shr_sys_abort(' ERROR: slopebeta NOT on surfdata file'//&
+!            errMsg(sourcefile, __LINE__))
+       do c = begc,endc
+          ! microtopographic parameter, units are meters (try smooth function of slope)
+          g = col%gridcell(c)
+          slope0 = params_inst%slopemax**(1._r8/params_inst%slopebeta)
+          col%micro_sigma(c) = (col%topo_slope(c) + slope0)**(params_inst%slopebeta)
+       end do
+       write(iulog,*)  "source of param - slopebeta is: parameter file" 
+    else
+       do c = begc,endc
+          ! microtopographic parameter, units are meters (try smooth function of slope)
+          g = col%gridcell(c)
+          slope0 = params_inst%slopemax**(1._r8/slopebeta_2d(g))
+          col%micro_sigma(c) = (col%topo_slope(c) + slope0)**(slopebeta_2d(g))
+       end do
+       write(iulog,*)  "source of param - slopebeta is: surface data file"
     end if
-
-    do c = begc,endc
-       ! microtopographic parameter, units are meters (try smooth function of slope)
-       g = col%gridcell(c)
-       slope0 = params_inst%slopemax**(1._r8/slopebeta(g))
-       col%micro_sigma(c) = (col%topo_slope(c) + slope0)**(slopebeta(g))
-    end do
-    deallocate(slopebeta)
+    deallocate(slopebeta_2d)
 
     ! read in medlynintercept - pft-denpendent variables
     call check_dim_size(ncid, 'maxpft', mxpft+1)

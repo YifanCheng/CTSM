@@ -50,6 +50,7 @@ module initVerticalMod
      real(r8) :: e_ice          ! Soil ice impedance factor (unitless)
      real(r8) :: fff            ! Decay factor for fractional saturated area (1/m)
      real(r8) :: ssi            ! Irreducible water saturation of snow (unitless) 
+     real(r8) :: n_melt_coef    ! n_melt parameter (unitless) 
   end type params_type
   type(params_type), private ::  params_inst
   !
@@ -85,6 +86,7 @@ contains
     call readNcdioScalar(ncid, 'e_ice', subname, params_inst%e_ice)
     call readNcdioScalar(ncid, 'fff', subname, params_inst%fff)
     call readNcdioScalar(ncid, 'ssi', subname, params_inst%ssi)
+    call readNcdioScalar(ncid, 'n_melt_coef', subname, params_inst%n_melt_coef)
   end subroutine readParams
 
   !------------------------------------------------------------------------
@@ -749,14 +751,18 @@ contains
     allocate(snowhydro_n_melt_coef(bounds%begg:bounds%endg))
     call ncd_io(ncid=ncid, varname='n_melt_coef', flag='read', data=snowhydro_n_melt_coef, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
-       call shr_sys_abort(' ERROR: n_melt_coef NOT on surfdata file'//&
-            errMsg(sourcefile, __LINE__))
+!       call shr_sys_abort(' ERROR: n_melt_coef NOT on surfdata file'//&
+!            errMsg(sourcefile, __LINE__))
+       col%n_melt_coef(:) = params_inst%n_melt_coef
+       write(iulog,*) "source of param - n_melt_coef is : parameter file"
+    else
+       do c = begc,endc
+          g = col%gridcell(c)
+          ! check for near zero slopes, set minimum value
+          col%n_melt_coef(c) = snowhydro_n_melt_coef(g)
+       write(iulog,*) "source of param - n_melt_coef is : surface data file"
+       end do
     end if
-    do c = begc,endc
-       g = col%gridcell(c)
-       ! check for near zero slopes, set minimum value
-       col%n_melt_coef(c) = snowhydro_n_melt_coef(g)
-    end do
     deallocate(snowhydro_n_melt_coef)
 
     allocate(hydro_e_ice(bounds%begg:bounds%endg))

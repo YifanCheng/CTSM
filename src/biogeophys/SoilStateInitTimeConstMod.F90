@@ -35,8 +35,8 @@ module SoilStateInitTimeConstMod
      real(r8) :: csol_om             ! Heat capacity of peat soil *10^6 (Farouki, 1986) (J/K/m3)
      real(r8) :: csol_sand           ! Heat capacity of sand *10^6 (J/K/m3)
      real(r8) :: bsw_sf              ! Scale factor for bsw (unitless)
-!     real(r8) :: hksat_sf            ! Scale factor for hksat (unitless)
-!     real(r8) :: sucsat_sf           ! Scale factor for sucsat (unitless)
+     real(r8) :: hksat_sf            ! Scale factor for hksat (unitless)
+     real(r8) :: sucsat_sf           ! Scale factor for sucsat (unitless)
      real(r8) :: watsat_sf           ! Scale factor for watsat (unitless)
      real(r8) :: sand_pf             ! Perturbation factor (via addition) for percent sand (percent)
      real(r8) :: clay_pf             ! Perturbation factor (via addition) for percent clay of clay+silt (percent)
@@ -140,10 +140,10 @@ contains
     call readNcdioScalar(ncid, 'csol_sand', subname, params_inst%csol_sand)
     ! Scale factor for bsw (unitless)
     call readNcdioScalar(ncid, 'bsw_sf', subname, params_inst%bsw_sf)
-!    ! Scale factor for hksat (unitless)
-!    call readNcdioScalar(ncid, 'hksat_sf', subname, params_inst%hksat_sf)
-!    ! Scale factor for sucsat (unitless)
-!    call readNcdioScalar(ncid, 'sucsat_sf', subname, params_inst%sucsat_sf)
+    ! Scale factor for hksat (unitless)
+    call readNcdioScalar(ncid, 'hksat_sf', subname, params_inst%hksat_sf)
+    ! Scale factor for sucsat (unitless)
+    call readNcdioScalar(ncid, 'sucsat_sf', subname, params_inst%sucsat_sf)
     ! Scale factor for watsat (unitless)
     call readNcdioScalar(ncid, 'watsat_sf', subname, params_inst%watsat_sf)
     ! Perturbation factor (via addition) for percent sand (percent)
@@ -371,13 +371,21 @@ contains
     allocate(hksat_sf(begg:endg))
     call ncd_io(ncid=ncid, varname='hksat_sf', flag='read', data=hksat_sf, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
-       call endrun(msg=' ERROR: hksat_sf NOT on surfdata file'//errMsg(sourcefile, __LINE__))
+!       call endrun(msg=' ERROR: hksat_sf NOT on surfdata file'//errMsg(sourcefile, __LINE__))
+        hksat_sf(:) = params_inst%hksat_sf
+        write(iulog,*) "source of param - hksat_sf is: parameter file"
+    else
+        write(iulog,*) "source of param - hksat_sf is: surface data file" 
     end if
 
     allocate(sucsat_sf(begg:endg))
     call ncd_io(ncid=ncid, varname='sucsat_sf', flag='read', data=sucsat_sf, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
-       call endrun(msg=' ERROR: sucsat_sf NOT on surfdata file'//errMsg(sourcefile, __LINE__))
+!       call endrun(msg=' ERROR: sucsat_sf NOT on surfdata file'//errMsg(sourcefile, __LINE__))
+        sucsat_sf(:) = params_inst%sucsat_sf
+        write(iulog,*) "source of param - sucsat_sf is: parameter file"
+    else
+        write(iulog,*) "source of param - sucsat_sf is: surface data file"
     end if
 
     allocate(soil_om_frac_sf(begg:endg))

@@ -40,7 +40,7 @@ module SoilStateInitTimeConstMod
      real(r8) :: watsat_sf           ! Scale factor for watsat (unitless)
      real(r8) :: sand_pf             ! Perturbation factor (via addition) for percent sand (percent)
      real(r8) :: clay_pf             ! Perturbation factor (via addition) for percent clay of clay+silt (percent)
-!     real(r8) :: om_frac_sf          ! Scale factor for organic matter fraction (unitless)
+     real(r8) :: om_frac_sf          ! Scale factor for organic matter fraction (unitless)
   end type params_type
   type(params_type), private ::  params_inst
 
@@ -150,8 +150,8 @@ contains
     call readNcdioScalar(ncid, 'sand_pf', subname, params_inst%sand_pf)
     ! Perturbation factor  (via addition) for percent clay of clay+silt (percent)
     call readNcdioScalar(ncid, 'clay_pf', subname, params_inst%clay_pf)
-!    ! Scale factor for organic matter fraction (unitless)
-!    call readNcdioScalar(ncid, 'om_frac_sf', subname, params_inst%om_frac_sf)
+    ! Scale factor for organic matter fraction (unitless)
+    call readNcdioScalar(ncid, 'om_frac_sf', subname, params_inst%om_frac_sf)
 
   end subroutine readParams
 
@@ -383,12 +383,16 @@ contains
     allocate(soil_om_frac_sf(begg:endg))
     call ncd_io(ncid=ncid, varname='om_frac_sf', flag='read', data=soil_om_frac_sf, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
-       call endrun(msg=' ERROR: om_frac_sf NOT on surfdata file'//errMsg(sourcefile, __LINE__))
-    end if
-    do c = begc, endc
-       g = col%gridcell(c)
-       col%om_frac_sf(c) = soil_om_frac_sf(g)
-    end do
+!       call endrun(msg=' ERROR: om_frac_sf NOT on surfdata file'//errMsg(sourcefile, __LINE__))
+       col%om_frac_sf(:) = params_inst%om_frac_sf
+       write(iulog,*) "source of param - om_frac_sf is: parameter file" 
+    else
+       do c = begc, endc
+          g = col%gridcell(c)
+          col%om_frac_sf(c) = soil_om_frac_sf(g)
+       end do
+       write(iulog,*) "source of param - om_frac_sf is: surface data file"
+    end if 
     deallocate(soil_om_frac_sf)
 
     call ncd_pio_closefile(ncid)

@@ -88,6 +88,7 @@ module ColumnType
      real(r8), pointer :: fff                  (:)   ! Decay factor for fractional saturated area (1/m)
      real(r8), pointer :: upplim_destruct_metamorph (:) ! Upper Limit on Destructive Metamorphism Compaction [kg/m3]
      real(r8), pointer :: om_frac_sf           (:)   ! Scale factor for organic matter fraction (unitless)
+     logical , pointer :: upp_dst_meta_surf          ! determine whether upplim_destruct_metamorph exists in surface dataset
 
      ! levgrnd_class gives the class in which each layer falls. This is relevant for
      ! columns where there are 2 or more fundamentally different layer types. For
@@ -170,6 +171,7 @@ contains
     allocate(this%fff         (begc:endc))                     ; this%fff         (:)   = spval
     allocate(this%upplim_destruct_metamorph(begc:endc))        ; this%upplim_destruct_metamorph(:) = spval
     allocate(this%om_frac_sf  (begc:endc))                     ; this%om_frac_sf  (:)   = spval
+    allocate(this%upp_dst_meta_surf      )                     ; this%upp_dst_meta_surf = .false.
 
   end subroutine Init
 
@@ -223,6 +225,7 @@ contains
     deallocate(this%fff        )
     deallocate(this%upplim_destruct_metamorph)
     deallocate(this%om_frac_sf )
+    deallocate(this%upp_dst_meta_surf        )
   end subroutine Clean
 
   !-----------------------------------------------------------------------

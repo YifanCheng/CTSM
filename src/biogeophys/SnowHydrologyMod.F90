@@ -281,6 +281,7 @@ contains
             errMsg(sourcefile, __LINE__))
     end if
 
+
   end subroutine SnowHydrology_readnl
 
   !----------------------------------------------------------------------------
@@ -1916,6 +1917,8 @@ contains
     dtime = get_step_size_real()
 
     ! Begin calculation - note that the following column loops are only invoked if snl(c) < 0
+
+    if (.not. col%upp_dst_meta_surf) col%upplim_destruct_metamorph(:) = upplim_destruct_metamorph
 
     do fc = 1, num_snowc
        c = filter_snowc(fc)

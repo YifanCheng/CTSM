@@ -803,14 +803,19 @@ contains
     allocate(snowhydro_upp_dst_meta(bounds%begg:bounds%endg))
     call ncd_io(ncid=ncid, varname='upplim_destruct_metamorph', flag='read', data=snowhydro_upp_dst_meta, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
-       call shr_sys_abort(' ERROR: upplim_destruct_metamorph NOT on surfdata file'//&
-            errMsg(sourcefile, __LINE__))
+!       call shr_sys_abort(' ERROR: upplim_destruct_metamorph NOT on surfdata file'//&
+!            errMsg(sourcefile, __LINE__))
+       col%upp_dst_meta_surf = .false.
+       write(iulog,*) "source of param - upplim_destruct_metamorph is: namelist file"
+    else
+       col%upp_dst_meta_surf = .true.
+       do c = begc,endc
+          g = col%gridcell(c)
+          ! check for near zero slopes, set minimum value
+          col%upplim_destruct_metamorph(c) = snowhydro_upp_dst_meta(g)
+       end do
+       write(iulog,*) "source of param - upplim_destruct_metamorph is: surface data file"
     end if
-    do c = begc,endc
-       g = col%gridcell(c)
-       ! check for near zero slopes, set minimum value
-       col%upplim_destruct_metamorph(c) = snowhydro_upp_dst_meta(g)
-    end do
     deallocate(snowhydro_upp_dst_meta)
 
 

@@ -2728,8 +2728,8 @@ contains
          i_flnr     => pftcon%i_flnr                         , & ! Input:  [real(r8) (:)   ]  
          s_flnr     => pftcon%s_flnr                         , & ! Input:  [real(r8) (:)   ]  
          mbbopt     => pftcon%mbbopt                         , & 
-         medlynintercept=> grc%medlynintercept            , & ! Input:  [real(r8) (:)   ]  Intercept for Medlyn stomatal conductance model method
-         medlynslope=> pftcon%medlynslope                    , & ! Input:  [real(r8) (:)   ]  Slope for Medlyn stomatal conductance model method
+         medlynintercept=> grc%medlynintercept               , & ! Input:  [real(r8) (:)   ]  Intercept for Medlyn stomatal conductance model method
+         medlynslope=> grc%medlynslope                       , & ! Input:  [real(r8) (:)   ]  Slope for Medlyn stomatal conductance model method
          forc_pbot  => atm2lnd_inst%forc_pbot_downscaled_col , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)
          ivt        => patch%itype                           , & ! Input:  [integer  (:)   ]  patch vegetation type
 
@@ -3353,8 +3353,8 @@ contains
                if ( stomatalcond_mtd == stomatalcond_mtd_medlyn2011 )then
                   gsminsun     = medlynintercept(g,patch%itype(p))
                   gsminsha     = medlynintercept(g,patch%itype(p))
-                  gs_slope_sun = medlynslope(patch%itype(p))
-                  gs_slope_sha = medlynslope(patch%itype(p))
+                  gs_slope_sun = medlynslope(g,patch%itype(p))
+                  gs_slope_sha = medlynslope(g,patch%itype(p))
                else if ( stomatalcond_mtd == stomatalcond_mtd_bb1987 )then
                   gsminsun     = bbb(p)
                   gsminsha     = bbb(p)
@@ -4036,8 +4036,8 @@ contains
          forc_pbot  => atm2lnd_inst%forc_pbot_downscaled_col , & ! Input:  [real(r8) (:)   ]    atmospheric pressure (Pa)
          c3flag     => photosyns_inst%c3flag_patch           , & ! Input:  [logical  (:)   ]    true if C3 and false if C4
          ivt        => patch%itype                           , & ! Input:  [integer  (:)   ]  patch vegetation type
-         medlynslope=> pftcon%medlynslope                    , & ! Input:  [real(r8) (:)   ]  Slope for Medlyn stomatal conductance model method
-         medlynintercept=> grc%medlynintercept            , & ! Input:  [real(r8) (:)   ]  Intercept for Medlyn stomatal conductance model method
+         medlynslope=> grc%medlynslope                       , & ! Input:  [real(r8) (:)   ]  Slope for Medlyn stomatal conductance model method
+         medlynintercept=> grc%medlynintercept               , & ! Input:  [real(r8) (:)   ]  Intercept for Medlyn stomatal conductance model method
          stomatalcond_mtd=> photosyns_inst%stomatalcond_mtd  , & ! Input:  [integer        ]  method type to use for stomatal conductance.GC.fnlprmsn15_r22845
          ac         => photosyns_inst%ac_phs_patch           , & ! Output: [real(r8) (:,:,:) ]  Rubisco-limited gross photosynthesis (umol CO2/m**2/s)
          aj         => photosyns_inst%aj_phs_patch           , & ! Output: [real(r8) (:,:,:) ]  RuBP-limited gross photosynthesis (umol CO2/m**2/s)
@@ -4164,11 +4164,11 @@ contains
        if (an_sun(p,iv) >= 0._r8) then
           term = 1.6_r8 * an_sun(p,iv) / (cs_sun / forc_pbot(c) * 1.e06_r8)
           aquad = 1.0_r8
-          bquad = -(2.0 * (medlynintercept(g,patch%itype(p))*1.e-06_r8 + term) + (medlynslope(patch%itype(p)) * term)**2 / &
+          bquad = -(2.0 * (medlynintercept(g,patch%itype(p))*1.e-06_r8 + term) + (medlynslope(g,patch%itype(p)) * term)**2 / &
                (gb_mol*1.e-06_r8 * rh_can))
           cquad = medlynintercept(g,patch%itype(p))*medlynintercept(g,patch%itype(p))*1.e-12_r8 + &
                (2.0*medlynintercept(g,patch%itype(p))*1.e-06_r8 + term * &
-               (1.0 - medlynslope(patch%itype(p))* medlynslope(patch%itype(p)) / rh_can)) * term
+               (1.0 - medlynslope(g,patch%itype(p))* medlynslope(g,patch%itype(p)) / rh_can)) * term
 
           call quadratic (aquad, bquad, cquad, r1, r2)
           gs_mol_sun = max(r1,r2) * 1.e06_r8
@@ -4181,11 +4181,11 @@ contains
 
           term = 1.6_r8 * an_sha(p,iv) / (cs_sha / forc_pbot(c) * 1.e06_r8)
           aquad = 1.0_r8
-          bquad = -(2.0 * (medlynintercept(g,patch%itype(p))*1.e-06_r8 + term) + (medlynslope(patch%itype(p)) * term)**2 / &
+          bquad = -(2.0 * (medlynintercept(g,patch%itype(p))*1.e-06_r8 + term) + (medlynslope(g,patch%itype(p)) * term)**2 / &
                (gb_mol*1.e-06_r8 * rh_can))
           cquad = medlynintercept(g,patch%itype(p))*medlynintercept(g,patch%itype(p))*1.e-12_r8 + &
-               (2.0*medlynintercept(g,patch%itype(p))*1.e-06_r8 + term * (1.0 - medlynslope(patch%itype(p))* &
-               medlynslope(patch%itype(p)) / rh_can)) * term
+               (2.0*medlynintercept(g,patch%itype(p))*1.e-06_r8 + term * (1.0 - medlynslope(g,patch%itype(p))* &
+               medlynslope(g,patch%itype(p)) / rh_can)) * term
 
           call quadratic (aquad, bquad, cquad, r1, r2)
           gs_mol_sha = max(r1,r2)* 1.e06_r8

@@ -133,6 +133,7 @@ contains
     real(r8) ,pointer     :: slopebeta_2d  (:) ! read in params - slopebeta
     real(r8) ,pointer     :: snowhydro_upp_dst_meta(:) ! read in params - upplim_destruct_metamorph
     real(r8) ,pointer     :: temp_medlynintercept  (:,:) ! read in params - medlyninterceipt
+    real(r8) ,pointer     :: temp_medlynslope      (:,:) ! read in params - medlynslope
 
     ! Possible values for levgrnd_class. The important thing is that, for a given column,
     ! layers that are fundamentally different (e.g., soil vs bedrock) have different
@@ -856,11 +857,27 @@ contains
        do g = bounds%begg,bounds%endg
           grc%medlynintercept(g,:) = pftcon%medlynintercept(:)
        end do
+       write(iulog,*)  "source of param - medlynintercept is: parameter file"
     else
        grc%medlynintercept(bounds%begg:bounds%endg,0:mxpft) = temp_medlynintercept(bounds%begg:bounds%endg,0:mxpft)
        write(iulog,*)  "source of param - medlynintercept is: surface data file"
     end if
     deallocate(temp_medlynintercept)
+
+    ! read in medlynslope - pft-denpendent variables
+    allocate(temp_medlynslope(bounds%begg:bounds%endg, 0:mxpft))
+    call ncd_io(ncid=ncid, varname='medlynslope', flag='read', data=temp_medlynslope, &
+         dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       do g = bounds%begg,bounds%endg
+          grc%medlynslope(g,:) = pftcon%medlynslope(:)
+       end do
+       write(iulog,*)  "source of param - medlynslope is: parameter file"
+    else
+       grc%medlynslope(bounds%begg:bounds%endg,0:mxpft) = temp_medlynslope(bounds%begg:bounds%endg,0:mxpft)
+       write(iulog,*)  "source of param - medlynslope is: surface data file"
+    end if
+    deallocate(temp_medlynslope)
 
     call ncd_pio_closefile(ncid)
 

@@ -46,7 +46,7 @@ module GridcellType
      
      ! read in spatially distributed parameters
      real(r8) , pointer :: medlynintercept (:,:) !
- 
+     real(r8) , pointer :: medlynslope     (:,:)  
    contains
 
      procedure, public :: Init
@@ -83,6 +83,7 @@ contains
 
     allocate(this%landunit_indices(1:max_lunit, begg:endg)); this%landunit_indices(:,:) = ispval
     allocate(this%medlynintercept (begg:endg  , 0:mxpft  )); this%medlynintercept (:,:) = spval
+    allocate(this%medlynslope     (begg:endg  , 0:mxpft  )); this%medlynslope     (:,:) = spval
 
   end subroutine Init
 
@@ -106,6 +107,7 @@ contains
     deallocate(this%prev_dayl        )
     deallocate(this%landunit_indices )
     deallocate(this%medlynintercept  )
+    deallocate(this%medlynslope      )
 
   end subroutine Clean
 

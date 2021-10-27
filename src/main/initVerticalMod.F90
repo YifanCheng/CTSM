@@ -92,6 +92,7 @@ contains
   !------------------------------------------------------------------------
   subroutine initVertical(bounds, glc_behavior, snow_depth, thick_wall, thick_roof)
     use clm_varcon, only : zmin_bedrock
+    use pftconMod , only : pftcon
     !
     ! !ARGUMENTS:
     type(bounds_type)   , intent(in)    :: bounds
@@ -841,15 +842,19 @@ contains
     deallocate(slopebeta_2d)
 
     ! read in medlynintercept - pft-denpendent variables
-    call check_dim_size(ncid, 'maxpft', mxpft+1)
+!    call check_dim_size(ncid, 'maxpft', mxpft+1)
     allocate(temp_medlynintercept(bounds%begg:bounds%endg, 0:mxpft))
     call ncd_io(ncid=ncid, varname='medlynintercept', flag='read', data=temp_medlynintercept, &
          dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
-       write(iulog,*)'surfrd error: medlynintercept not on surface data file'
+!       write(iulog,*)'surfrd error: medlynintercept not on surface data file'
+       do g = bounds%begg,bounds%endg
+          grc%medlynintercept(g,:) = pftcon%medlynintercept(:)
+       end do
     else
        grc%medlynintercept(bounds%begg:bounds%endg,0:mxpft) = temp_medlynintercept(bounds%begg:bounds%endg,0:mxpft)
-    endif
+       write(iulog,*)  "source of param - medlynintercept is: surface data file"
+    end if
     deallocate(temp_medlynintercept)
 
     call ncd_pio_closefile(ncid)

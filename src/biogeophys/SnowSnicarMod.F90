@@ -1269,7 +1269,7 @@ contains
 
             ! mass-weighted mean of fresh snow, old snow, and re-frozen snow effective radius
             snw_rds(c_idx,i) = (snw_rds(c_idx,i)+dr)*frc_oldsnow + snw_rds_fresh*frc_newsnow + &
-                               params_inst%snw_rds_refrz*frc_refrz
+                               col%snw_rds_refrz(c_idx)*frc_refrz
             !
             !**********  5. CHECK BOUNDARIES   ***********
             !

@@ -51,6 +51,9 @@ module initVerticalMod
      real(r8) :: fff            ! Decay factor for fractional saturated area (1/m)
      real(r8) :: ssi            ! Irreducible water saturation of snow (unitless) 
      real(r8) :: n_melt_coef    ! n_melt parameter (unitless) 
+     real(r8) :: d_max          ! Dry surface layer parameter (mm)
+     real(r8) :: frac_sat_soil_dsl_init !  Fraction of saturated soil for moisture value at which DSL initiates (unitless) 
+     real(r8) :: snw_rds_refrz  ! Effective radius of re-frozen snow (microns)
   end type params_type
   type(params_type), private ::  params_inst
   !
@@ -87,6 +90,10 @@ contains
     call readNcdioScalar(ncid, 'fff', subname, params_inst%fff)
     call readNcdioScalar(ncid, 'ssi', subname, params_inst%ssi)
     call readNcdioScalar(ncid, 'n_melt_coef', subname, params_inst%n_melt_coef)
+    call readNcdioScalar(ncid, 'd_max', subname, params_inst%d_max)
+    call readNcdioScalar(ncid, 'frac_sat_soil_dsl_init', subname, params_inst%frac_sat_soil_dsl_init)
+    call readNcdioScalar(ncid, 'snw_rds_refrz', subname, params_inst%snw_rds_refrz)
+
   end subroutine readParams
 
   !------------------------------------------------------------------------
@@ -134,6 +141,9 @@ contains
     real(r8) ,pointer     :: snowhydro_upp_dst_meta(:) ! read in params - upplim_destruct_metamorph
     real(r8) ,pointer     :: temp_medlynintercept  (:,:) ! read in params - medlyninterceipt
     real(r8) ,pointer     :: temp_medlynslope      (:,:) ! read in params - medlynslope
+    real(r8) ,pointer     :: sen_d_max     (:) ! read in params - d_max
+    real(r8) ,pointer     :: sen_frac_sat_soil     (:) ! read in params - frac_sat_soil_dsl_init
+    real(r8) ,pointer     :: snowhydro_snw_rds_refrz(:)! read in params - snw_rds_refrz
 
     ! Possible values for levgrnd_class. The important thing is that, for a given column,
     ! layers that are fundamentally different (e.g., soil vs bedrock) have different
@@ -784,6 +794,7 @@ contains
     end if
     deallocate(hydro_e_ice)
 
+    ! read in - fff
     allocate(hydro_fff(bounds%begg:bounds%endg))
     call ncd_io(ncid=ncid, varname='fff', flag='read', data=hydro_fff, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
@@ -794,31 +805,72 @@ contains
     else
        do c = begc,endc
           g = col%gridcell(c)
-          ! check for near zero slopes, set minimum value
           col%fff(c) = hydro_fff(g)
        end do
        write(iulog,*) "source of param - fff is: surface data file"
     end if
     deallocate(hydro_fff)
 
+    ! read in upplim_destruct_metamorph
     allocate(snowhydro_upp_dst_meta(bounds%begg:bounds%endg))
     call ncd_io(ncid=ncid, varname='upplim_destruct_metamorph', flag='read', data=snowhydro_upp_dst_meta, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
-!       call shr_sys_abort(' ERROR: upplim_destruct_metamorph NOT on surfdata file'//&
-!            errMsg(sourcefile, __LINE__))
        col%upp_dst_meta_surf = .false.
        write(iulog,*) "source of param - upplim_destruct_metamorph is: namelist file"
     else
        col%upp_dst_meta_surf = .true.
        do c = begc,endc
           g = col%gridcell(c)
-          ! check for near zero slopes, set minimum value
           col%upplim_destruct_metamorph(c) = snowhydro_upp_dst_meta(g)
        end do
        write(iulog,*) "source of param - upplim_destruct_metamorph is: surface data file"
     end if
     deallocate(snowhydro_upp_dst_meta)
 
+    ! read in d_max
+    allocate(sen_d_max(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='d_max', flag='read', data=sen_d_max, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       col%d_max(:) = params_inst%d_max
+       write(iulog,*) "source of param - d_max is: parameter file"
+    else
+       do c = begc,endc
+          g = col%gridcell(c)
+          col%d_max(c) = sen_d_max(g)
+       end do
+       write(iulog,*) "source of param - d_max is: surface data file"
+    end if
+    deallocate(sen_d_max)
+
+    ! read in frac_sat_soil_dsl_init 
+    allocate(sen_frac_sat_soil(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='frac_sat_soil_dsl_init', flag='read', data=sen_frac_sat_soil, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       col%frac_sat_soil_dsl_init(:) = params_inst%frac_sat_soil_dsl_init
+       write(iulog,*) "source of param - frac_sat_soil_dsl_init is: parameter file"
+    else
+       do c = begc,endc
+          g = col%gridcell(c)
+          col%frac_sat_soil_dsl_init(c) = sen_frac_sat_soil(g)
+       end do
+       write(iulog,*) "source of param - frac_sat_soil_dsl_init is: surface data file"
+    end if
+    deallocate(sen_frac_sat_soil)
+
+    ! read in snowhydro_snw_rds_refrz 
+    allocate(snowhydro_snw_rds_refrz(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='snw_rds_refrz', flag='read', data=snowhydro_snw_rds_refrz, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       col%snw_rds_refrz(:) = params_inst%snw_rds_refrz
+       write(iulog,*) "source of param - snw_rds_refrz is: parameter file"
+    else
+       do c = begc,endc
+          g = col%gridcell(c)
+          col%snw_rds_refrz(c) = snowhydro_snw_rds_refrz(g)
+       end do
+       write(iulog,*) "source of param - snw_rds_refrz is: surface data file"
+    end if
+    deallocate(snowhydro_snw_rds_refrz)
 
     !-----------------------------------------------
     ! SCA shape function defined

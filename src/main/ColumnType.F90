@@ -88,7 +88,10 @@ module ColumnType
      real(r8), pointer :: fff                  (:)   ! Decay factor for fractional saturated area (1/m)
      real(r8), pointer :: upplim_destruct_metamorph (:) ! Upper Limit on Destructive Metamorphism Compaction [kg/m3]
      real(r8), pointer :: om_frac_sf           (:)   ! Scale factor for organic matter fraction (unitless)
-     logical , pointer :: upp_dst_meta_surf          ! determine whether upplim_destruct_metamorph exists in surface dataset
+     logical , pointer :: upp_dst_meta_surf          ! Determine whether upplim_destruct_metamorph exists in surface dataset
+     real(r8), pointer :: d_max                (:)   ! Dry surface layer parameter (mm)
+     real(r8), pointer :: frac_sat_soil_dsl_init    (:) ! Fraction of saturated soil for moisture value at which DSL initiates (unitless)
+     real(r8), pointer :: snw_rds_refrz        (:)   ! Effective radius of re-frozen snow (microns)
 
      ! levgrnd_class gives the class in which each layer falls. This is relevant for
      ! columns where there are 2 or more fundamentally different layer types. For
@@ -172,6 +175,9 @@ contains
     allocate(this%upplim_destruct_metamorph(begc:endc))        ; this%upplim_destruct_metamorph(:) = spval
     allocate(this%om_frac_sf  (begc:endc))                     ; this%om_frac_sf  (:)   = spval
     allocate(this%upp_dst_meta_surf      )                     ; this%upp_dst_meta_surf = .false.
+    allocate(this%d_max       (begc:endc))                     ; this%d_max       (:)   = spval
+    allocate(this%frac_sat_soil_dsl_init   (begc:endc))        ; this%frac_sat_soil_dsl_init   (:) = spval
+    allocate(this%snw_rds_refrz(begc:endc))                    ; this%snw_rds_refrz(:)  = spval
 
   end subroutine Init
 
@@ -226,6 +232,10 @@ contains
     deallocate(this%upplim_destruct_metamorph)
     deallocate(this%om_frac_sf )
     deallocate(this%upp_dst_meta_surf        )
+    deallocate(this%d_max      )
+    deallocate(this%frac_sat_soil_dsl_init   )
+    deallocate(this%snw_rds_refrz            )
+
   end subroutine Clean
 
   !-----------------------------------------------------------------------

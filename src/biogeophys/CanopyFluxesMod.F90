@@ -999,7 +999,7 @@ bioms:   do f = 1, fn
                dleaf_patch(p) = dleaf(patch%itype(p))
             end if
 
-            cf  = params_inst%cv / (sqrt(uaf(p)) * sqrt(dleaf_patch(p)))
+            cf  = col%cv(c) / (sqrt(uaf(p)) * sqrt(dleaf_patch(p)))
             rb(p)  = 1._r8/(cf*uaf(p))
             rb1(p) = rb(p)
 
@@ -1011,7 +1011,7 @@ bioms:   do f = 1, fn
             ! changed by K.Sakaguchi from here
             ! transfer coefficient over bare soil is changed to a local variable
             ! just for readability of the code (from line 680)
-            csoilb = vkc / (params_inst%a_coef * (z0mg(c) * uaf(p) / 1.5e-5_r8)**params_inst%a_exp)
+            csoilb = vkc / (col%a_coef(c) * (z0mg(c) * uaf(p) / 1.5e-5_r8)**params_inst%a_exp)
 
             !compute the stability parameter for ricsoilc  ("S" in Sakaguchi&Zeng,2008)
 

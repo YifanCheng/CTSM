@@ -92,7 +92,9 @@ module ColumnType
      real(r8), pointer :: d_max                (:)   ! Dry surface layer parameter (mm)
      real(r8), pointer :: frac_sat_soil_dsl_init    (:) ! Fraction of saturated soil for moisture value at which DSL initiates (unitless)
      real(r8), pointer :: snw_rds_refrz        (:)   ! Effective radius of re-frozen snow (microns)
-
+     real(r8), pointer :: a_coef               (:)   ! Drag coefficient under less dense canopy (unitless)
+     real(r8), pointer :: vcmaxha              (:)   ! Activation energy for vcmax (J/mol) 
+     real(r8), pointer :: cv                   (:)   ! Turbulent transfer coeff. between canopy surface and canopy air (m/s^(1/2))
      ! levgrnd_class gives the class in which each layer falls. This is relevant for
      ! columns where there are 2 or more fundamentally different layer types. For
      ! example, this distinguishes between soil and bedrock layers. The particular value
@@ -178,7 +180,9 @@ contains
     allocate(this%d_max       (begc:endc))                     ; this%d_max       (:)   = spval
     allocate(this%frac_sat_soil_dsl_init   (begc:endc))        ; this%frac_sat_soil_dsl_init   (:) = spval
     allocate(this%snw_rds_refrz(begc:endc))                    ; this%snw_rds_refrz(:)  = spval
-
+    allocate(this%a_coef      (begc:endc))                     ; this%a_coef      (:)   = spval
+    allocate(this%vcmaxha     (begc:endc))                     ; this%vcmaxha     (:)   = spval
+    allocate(this%cv          (begc:endc))                     ; this%cv          (:)   = spval
   end subroutine Init
 
   !------------------------------------------------------------------------
@@ -235,7 +239,9 @@ contains
     deallocate(this%d_max      )
     deallocate(this%frac_sat_soil_dsl_init   )
     deallocate(this%snw_rds_refrz            )
-
+    deallocate(this%a_coef     )
+    deallocate(this%vcmaxha    )
+    deallocate(this%cv         )
   end subroutine Clean
 
   !-----------------------------------------------------------------------

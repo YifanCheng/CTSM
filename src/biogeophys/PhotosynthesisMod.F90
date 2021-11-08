@@ -1068,7 +1068,7 @@ contains
     use clm_varctl     , only : cnallocate_carbon_only
     use clm_varctl     , only : lnc_opt, reduce_dayl_factor, vcmax_opt    
     use pftconMod      , only : nbrdlf_dcd_tmp_shrub, npcropmin
-
+    use ColumnType     , only : col
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -1371,6 +1371,7 @@ contains
 
       do f = 1, fn
          p = filterp(f)
+         c = patch%column(p)
 
          if (lnc_opt .eqv. .false.) then     
             ! Leaf nitrogen concentration at the top of the canopy (g N leaf / m**2 leaf)
@@ -1599,7 +1600,7 @@ contains
                vcmaxc = fth25 (params_inst%vcmaxhd, vcmaxse)
                jmaxc  = fth25 (params_inst%jmaxhd, jmaxse)
                tpuc   = fth25 (params_inst%tpuhd, tpuse)
-               vcmax_z(p,iv) = vcmax25 * ft(t_veg(p), params_inst%vcmaxha) * fth(t_veg(p), &
+               vcmax_z(p,iv) = vcmax25 * ft(t_veg(p), col%vcmaxha(c)) * fth(t_veg(p), &
                     params_inst%vcmaxhd, vcmaxse, vcmaxc)
                jmax_z(p,iv) = jmax25 * ft(t_veg(p), params_inst%jmaxha) * fth(t_veg(p), &
                     params_inst%jmaxhd, jmaxse, jmaxc)
@@ -2831,7 +2832,8 @@ contains
       do f = 1, fn
          p = filterp(f)
          c = patch%column(p)
-         
+         g = patch%gridcell(p)
+ 
          do j = 1,nlevsoi
 
 ! calculate conversion from conductivity to conductance
@@ -2859,7 +2861,7 @@ contains
                fs(j)=  plc(smp(c,j),p,c,root,veg)
             
 ! krmax is root conductance per area per length
-            root_conductance = (fs(j)*rai(j)*params_inst%krmax(ivt(p)))/(croot_average_length + z(c,j))
+            root_conductance = (fs(j)*rai(j)*grc%krmax(g,ivt(p)))/(croot_average_length + z(c,j))
 
             soil_conductance = max(soil_conductance, 1.e-16_r8)
             root_conductance = max(root_conductance, 1.e-16_r8)
@@ -2937,7 +2939,7 @@ contains
 
       do f = 1, fn
          p = filterp(f)
-
+         c = patch%column(p)
          if (lnc_opt .eqv. .false.) then     
             ! Leaf nitrogen concentration at the top of the canopy (g N leaf / m**2 leaf)
             lnc(p) = 1._r8 / (slatop(patch%itype(p)) * leafcn(patch%itype(p)))
@@ -3189,13 +3191,13 @@ contains
                vcmaxc = fth25 (params_inst%vcmaxhd, vcmaxse)
                jmaxc  = fth25 (params_inst%jmaxhd, jmaxse)
                tpuc   = fth25 (params_inst%tpuhd, tpuse)
-               vcmax_z(p,sun,iv) = vcmax25_sun * ft(t_veg(p), params_inst%vcmaxha) * fth(t_veg(p), &
+               vcmax_z(p,sun,iv) = vcmax25_sun * ft(t_veg(p), col%vcmaxha(c)) * fth(t_veg(p), &
                     params_inst%vcmaxhd, vcmaxse, vcmaxc)
                jmax_z(p,sun,iv) = jmax25_sun * ft(t_veg(p), params_inst%jmaxha) * fth(t_veg(p), &
                     params_inst%jmaxhd, jmaxse, jmaxc)
                tpu_z(p,sun,iv) = tpu25_sun * ft(t_veg(p), params_inst%tpuha) * fth(t_veg(p), &
                     params_inst%tpuhd, tpuse, tpuc)
-               vcmax_z(p,sha,iv) = vcmax25_sha * ft(t_veg(p), params_inst%vcmaxha) * fth(t_veg(p), &
+               vcmax_z(p,sha,iv) = vcmax25_sha * ft(t_veg(p), col%vcmaxha(c)) * fth(t_veg(p), &
                     params_inst%vcmaxhd, vcmaxse, vcmaxc)
                jmax_z(p,sha,iv) = jmax25_sha * ft(t_veg(p), params_inst%jmaxha) * fth(t_veg(p), &
                     params_inst%jmaxhd, jmaxse, jmaxc)

@@ -7,10 +7,10 @@
  create_crop_landunit = .true.
  crop_fsat_equals_zero = .false.
  fatmlndfrc = '/glade/p/ral/hap/common_data/rasm/inputdata/share/domains/domain.lnd.nna04a_nna04a.210305.nc'
- finidat = '/glade/p/ral/hap/common_data/rasm/inputdata/lnd/clm2/initdata_map/clmi.I2000Clm50BgcCrop.2000-01-01.1.9x2.5_gx1v7_gl4_simyr2000_c200728.nc'
+ finidat = '/glade/p/ral/hap/common_data/rasm/inputdata/lnd/clm2/initdata/RASM_init_4km.clm2.r.2012-07-01-00000.nc'
  fsnowaging = '/glade/p/ral/hap/common_data/rasm/inputdata/lnd/clm2/snicardata/snicar_drdt_bst_fit_60_c070416.nc'
  fsnowoptics = '/glade/p/ral/hap/common_data/rasm/inputdata/lnd/clm2/snicardata/snicar_optics_5bnd_c090915.nc'
- fsurdat = '/glade/p/ral/hap/common_data/rasm/inputdata/lnd/clm2/surfdata/surfdata_nna04a_hist_78pfts_CMIP6_simyr2000_c210305.nc'
+ fsurdat = '/glade/p/ral/hap/common_data/rasm/inputdata/lnd/clm2/surfdata/surfdata_nna4a_hist_16pfts_HAND_2_aspect_4_col_hillslope_geo_params_200_nlcd_annularx10_bedrock_pe.mth.nna.SG.OM.rasm.cdf5.nc'
  glc_do_dynglacier = .false.
  glc_snow_persistence_max_days = 0
  h2osno_max = 10000.0
@@ -119,7 +119,7 @@
 &mineral_nitrogen_dynamics
 /
 &soilwater_movement_inparm
- dtmin = 60.
+ dtmin = 10.
  expensive = 42
  flux_calculation = 1
  inexpensive = 1

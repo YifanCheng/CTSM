@@ -14,6 +14,8 @@
  glc_do_dynglacier = .false.
  glc_snow_persistence_max_days = 0
  h2osno_max = 10000.0
+ hist_dov2xy = .true.
+ hist_nhtfrq = -3
  hist_master_list_file = .false.
  irrigate = .true.
  is_outmatrix = .false.

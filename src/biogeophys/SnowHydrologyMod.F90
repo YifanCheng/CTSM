@@ -71,7 +71,7 @@ module SnowHydrologyMod
 
   type, private :: params_type
       real(r8) :: wimp                  ! Water impremeable if porosity less than wimp (unitless)
-      real(r8) :: ssi                   ! Irreducible water saturation of snow (unitless)
+!      real(r8) :: ssi                   ! Irreducible water saturation of snow (unitless)
       real(r8) :: drift_gs              ! Wind drift compaction / grain size (fixed value for now) (unitless)
       real(r8) :: eta0_anderson         ! Viscosity coefficent from Anderson1976 (kg*s/m2)
       real(r8) :: eta0_vionnet          ! Viscosity coefficent from Vionnet2012 (kg*s/m2)
@@ -210,7 +210,7 @@ contains
 
     namelist /clm_snowhydrology_inparm/ &
          wind_dependent_snow_density, snow_overburden_compaction_method, &
-         lotmp_snowdensity_method, upplim_destruct_metamorph, &
+         lotmp_snowdensity_method, upplim_destruct_metamorph, & 
          overburden_compress_Tfactor, &
          reset_snow, reset_snow_glc, reset_snow_glc_ela, &
          snow_dzmin_1, snow_dzmax_l_1, snow_dzmax_u_1, &
@@ -281,6 +281,7 @@ contains
             errMsg(sourcefile, __LINE__))
     end if
 
+
   end subroutine SnowHydrology_readnl
 
   !----------------------------------------------------------------------------
@@ -300,8 +301,8 @@ contains
 
     ! Water impremeable if porosity less than wimp (unitless)
     call readNcdioScalar(ncid, 'wimp', subname, params_inst%wimp)
-    ! Irreducible water saturation of snow (unitless)
-    call readNcdioScalar(ncid, 'ssi', subname, params_inst%ssi)
+!    ! Irreducible water saturation of snow (unitless)
+!    call readNcdioScalar(ncid, 'ssi', subname, params_inst%ssi)
     ! Wind drift compaction / grain size (fixed value for now) (unitless)
     call readNcdioScalar(ncid, 'drift_gs', subname, params_inst%drift_gs)
     ! Viscosity coefficent from Anderson1976 (kg*s/m2)
@@ -1339,13 +1340,15 @@ contains
                 else
                    ! dz must be scaled by frac_sno to obtain gridcell average value
                    qflx_snow_percolation(c,j) = max(0._r8,(vol_liq(c,j) &
-                        - params_inst%ssi*eff_porosity(c,j))*dz(c,j)*frac_sno_eff(c))
+                         - col%ssi(c)*eff_porosity(c,j))*dz(c,j)*frac_sno_eff(c))
+!                        - params_inst%ssi*eff_porosity(c,j))*dz(c,j)*frac_sno_eff(c))
                    qflx_snow_percolation(c,j) = min(qflx_snow_percolation(c,j),(1._r8-vol_ice(c,j+1) &
                         - vol_liq(c,j+1))*dz(c,j+1)*frac_sno_eff(c))
                 end if
              else
                 qflx_snow_percolation(c,j) = max(0._r8,(vol_liq(c,j) &
-                     - params_inst%ssi*eff_porosity(c,j))*dz(c,j)*frac_sno_eff(c))
+                      - col%ssi(c)*eff_porosity(c,j))*dz(c,j)*frac_sno_eff(c))
+!                     - params_inst%ssi*eff_porosity(c,j))*dz(c,j)*frac_sno_eff(c))
              end if
              qflx_snow_percolation(c,j) = (qflx_snow_percolation(c,j)*1000._r8)/dtime
           end if
@@ -1915,6 +1918,8 @@ contains
 
     ! Begin calculation - note that the following column loops are only invoked if snl(c) < 0
 
+    if (.not. col%upp_dst_meta_surf) col%upplim_destruct_metamorph(:) = upplim_destruct_metamorph
+
     do fc = 1, num_snowc
        c = filter_snowc(fc)
        
@@ -1944,7 +1949,7 @@ contains
                 ! Settling as a result of destructive metamorphism
 
                 ddz1 = -c3*dexpf
-                if (bi > upplim_destruct_metamorph) ddz1 = ddz1*exp(-46.0e-3_r8*(bi-upplim_destruct_metamorph))
+                if (bi > col%upplim_destruct_metamorph(c)) ddz1 = ddz1*exp(-46.0e-3_r8*(bi-col%upplim_destruct_metamorph(c)))
 
                 ! Liquid water term
 

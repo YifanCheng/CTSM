@@ -1068,7 +1068,7 @@ contains
     use clm_varctl     , only : cnallocate_carbon_only
     use clm_varctl     , only : lnc_opt, reduce_dayl_factor, vcmax_opt    
     use pftconMod      , only : nbrdlf_dcd_tmp_shrub, npcropmin
-
+    use ColumnType     , only : col
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -1371,6 +1371,7 @@ contains
 
       do f = 1, fn
          p = filterp(f)
+         c = patch%column(p)
 
          if (lnc_opt .eqv. .false.) then     
             ! Leaf nitrogen concentration at the top of the canopy (g N leaf / m**2 leaf)
@@ -1599,7 +1600,7 @@ contains
                vcmaxc = fth25 (params_inst%vcmaxhd, vcmaxse)
                jmaxc  = fth25 (params_inst%jmaxhd, jmaxse)
                tpuc   = fth25 (params_inst%tpuhd, tpuse)
-               vcmax_z(p,iv) = vcmax25 * ft(t_veg(p), params_inst%vcmaxha) * fth(t_veg(p), &
+               vcmax_z(p,iv) = vcmax25 * ft(t_veg(p), col%vcmaxha(c)) * fth(t_veg(p), &
                     params_inst%vcmaxhd, vcmaxse, vcmaxc)
                jmax_z(p,iv) = jmax25 * ft(t_veg(p), params_inst%jmaxha) * fth(t_veg(p), &
                     params_inst%jmaxhd, jmaxse, jmaxc)
@@ -2497,7 +2498,6 @@ contains
     use pftconMod         , only : nbrdlf_dcd_tmp_shrub, npcropmin
     use ColumnType        , only : col
     use shr_infnan_mod    , only : shr_infnan_isnan
-
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -2729,8 +2729,8 @@ contains
          i_flnr     => pftcon%i_flnr                         , & ! Input:  [real(r8) (:)   ]  
          s_flnr     => pftcon%s_flnr                         , & ! Input:  [real(r8) (:)   ]  
          mbbopt     => pftcon%mbbopt                         , & 
-         medlynintercept=> pftcon%medlynintercept            , & ! Input:  [real(r8) (:)   ]  Intercept for Medlyn stomatal conductance model method
-         medlynslope=> pftcon%medlynslope                    , & ! Input:  [real(r8) (:)   ]  Slope for Medlyn stomatal conductance model method
+         medlynintercept=> grc%medlynintercept               , & ! Input:  [real(r8) (:)   ]  Intercept for Medlyn stomatal conductance model method
+         medlynslope=> grc%medlynslope                       , & ! Input:  [real(r8) (:)   ]  Slope for Medlyn stomatal conductance model method
          forc_pbot  => atm2lnd_inst%forc_pbot_downscaled_col , & ! Input:  [real(r8) (:)   ]  atmospheric pressure (Pa)
          ivt        => patch%itype                           , & ! Input:  [integer  (:)   ]  patch vegetation type
 
@@ -2832,7 +2832,8 @@ contains
       do f = 1, fn
          p = filterp(f)
          c = patch%column(p)
-         
+         g = patch%gridcell(p)
+ 
          do j = 1,nlevsoi
 
 ! calculate conversion from conductivity to conductance
@@ -2860,7 +2861,7 @@ contains
                fs(j)=  plc(smp(c,j),p,c,root,veg)
             
 ! krmax is root conductance per area per length
-            root_conductance = (fs(j)*rai(j)*params_inst%krmax(ivt(p)))/(croot_average_length + z(c,j))
+            root_conductance = (fs(j)*rai(j)*grc%krmax(g,ivt(p)))/(croot_average_length + z(c,j))
 
             soil_conductance = max(soil_conductance, 1.e-16_r8)
             root_conductance = max(root_conductance, 1.e-16_r8)
@@ -2938,7 +2939,7 @@ contains
 
       do f = 1, fn
          p = filterp(f)
-
+         c = patch%column(p)
          if (lnc_opt .eqv. .false.) then     
             ! Leaf nitrogen concentration at the top of the canopy (g N leaf / m**2 leaf)
             lnc(p) = 1._r8 / (slatop(patch%itype(p)) * leafcn(patch%itype(p)))
@@ -3190,13 +3191,13 @@ contains
                vcmaxc = fth25 (params_inst%vcmaxhd, vcmaxse)
                jmaxc  = fth25 (params_inst%jmaxhd, jmaxse)
                tpuc   = fth25 (params_inst%tpuhd, tpuse)
-               vcmax_z(p,sun,iv) = vcmax25_sun * ft(t_veg(p), params_inst%vcmaxha) * fth(t_veg(p), &
+               vcmax_z(p,sun,iv) = vcmax25_sun * ft(t_veg(p), col%vcmaxha(c)) * fth(t_veg(p), &
                     params_inst%vcmaxhd, vcmaxse, vcmaxc)
                jmax_z(p,sun,iv) = jmax25_sun * ft(t_veg(p), params_inst%jmaxha) * fth(t_veg(p), &
                     params_inst%jmaxhd, jmaxse, jmaxc)
                tpu_z(p,sun,iv) = tpu25_sun * ft(t_veg(p), params_inst%tpuha) * fth(t_veg(p), &
                     params_inst%tpuhd, tpuse, tpuc)
-               vcmax_z(p,sha,iv) = vcmax25_sha * ft(t_veg(p), params_inst%vcmaxha) * fth(t_veg(p), &
+               vcmax_z(p,sha,iv) = vcmax25_sha * ft(t_veg(p), col%vcmaxha(c)) * fth(t_veg(p), &
                     params_inst%vcmaxhd, vcmaxse, vcmaxc)
                jmax_z(p,sha,iv) = jmax25_sha * ft(t_veg(p), params_inst%jmaxha) * fth(t_veg(p), &
                     params_inst%jmaxhd, jmaxse, jmaxc)
@@ -3260,8 +3261,8 @@ contains
                   gsminsun = bbb(p)
                   gsminsha = bbb(p)
                else if ( stomatalcond_mtd == stomatalcond_mtd_medlyn2011 )then
-                  gsminsun = medlynintercept(patch%itype(p))
-                  gsminsha = medlynintercept(patch%itype(p))
+                  gsminsun = medlynintercept(g,patch%itype(p))
+                  gsminsha = medlynintercept(g,patch%itype(p))
                else
                   gsminsun = nan
                   gsminsha = nan
@@ -3352,10 +3353,10 @@ contains
                                qsatl(p), qaf(p), iter1, iter2, atm2lnd_inst, photosyns_inst, &
                                canopystate_inst, waterdiagnosticbulk_inst, soilstate_inst, temperature_inst, waterfluxbulk_inst)
                if ( stomatalcond_mtd == stomatalcond_mtd_medlyn2011 )then
-                  gsminsun     = medlynintercept(patch%itype(p))
-                  gsminsha     = medlynintercept(patch%itype(p))
-                  gs_slope_sun = medlynslope(patch%itype(p))
-                  gs_slope_sha = medlynslope(patch%itype(p))
+                  gsminsun     = medlynintercept(g,patch%itype(p))
+                  gsminsha     = medlynintercept(g,patch%itype(p))
+                  gs_slope_sun = medlynslope(g,patch%itype(p))
+                  gs_slope_sha = medlynslope(g,patch%itype(p))
                else if ( stomatalcond_mtd == stomatalcond_mtd_bb1987 )then
                   gsminsun     = bbb(p)
                   gsminsha     = bbb(p)
@@ -3684,7 +3685,7 @@ contains
        tolsha = abs(x1sha) * eps
        
        ! this ci_func_PHS call updates bsun/bsha (except on first iter)
-       call ci_func_PHS(x,x0sun, x0sha, f0sun, f0sha, p, iv, c, bsun, bsha, bflag, gb_mol, gs0sun, gs0sha,&
+       call ci_func_PHS(x,x0sun, x0sha, f0sun, f0sha, p, iv, c, g, bsun, bsha, bflag, gb_mol, gs0sun, gs0sha,&
             gs_mol_sun, gs_mol_sha, jesun, jesha, cair, oair, lmr_z_sun, lmr_z_sha, par_z_sun, par_z_sha, rh_can, &
             qsatl, qaf, atm2lnd_inst, photosyns_inst, canopystate_inst, waterdiagnosticbulk_inst, soilstate_inst, &
             temperature_inst, waterfluxbulk_inst)
@@ -3697,7 +3698,7 @@ contains
        bflag=.false.
        
        ! this ci_func_PHS call creates second point for ci interpolation
-       call ci_func_PHS(x,x1sun, x1sha, f1sun, f1sha, p, iv, c, bsun, bsha, bflag, gb_mol, gs0sun, gs0sha,&
+       call ci_func_PHS(x,x1sun, x1sha, f1sun, f1sha, p, iv, c, g, bsun, bsha, bflag, gb_mol, gs0sun, gs0sha,&
             gs_mol_sun, gs_mol_sha, jesun, jesha, cair, oair, lmr_z_sun, lmr_z_sha, par_z_sun, par_z_sha, rh_can, &
             qsatl, qaf, atm2lnd_inst, photosyns_inst, canopystate_inst, waterdiagnosticbulk_inst, soilstate_inst, &
             temperature_inst, waterfluxbulk_inst)
@@ -3729,7 +3730,7 @@ contains
           x0sha=x1sha
           x1sha=x1sha+dxsha
           
-          call ci_func_PHS(x,x1sun, x1sha, f1sun, f1sha, p, iv, c, bsun, bsha, bflag, gb_mol, gs0sun, gs0sha,&
+          call ci_func_PHS(x,x1sun, x1sha, f1sun, f1sha, p, iv, c, g, bsun, bsha, bflag, gb_mol, gs0sun, gs0sha,&
                gs_mol_sun, gs_mol_sha, jesun, jesha, cair, oair, lmr_z_sun, lmr_z_sha, par_z_sun, par_z_sha, rh_can, &
                qsatl, qaf, atm2lnd_inst, photosyns_inst, canopystate_inst, waterdiagnosticbulk_inst, soilstate_inst, &
                temperature_inst, waterfluxbulk_inst)
@@ -3760,7 +3761,7 @@ contains
           if ( (f1sun*f0sun < 0._r8) .and. (f1sha*f0sha < 0._r8) ) then
              
              call brent_PHS(xsun, x0sun, x1sun, f0sun, f1sun, xsha, x0sha, x1sha, f0sha, f1sha, &
-                  tolsun, p, iv, c, gb_mol, jesun, jesha, cair, oair, lmr_z_sun, lmr_z_sha, par_z_sun, par_z_sha,&
+                  tolsun, p, iv, c, g, gb_mol, jesun, jesha, cair, oair, lmr_z_sun, lmr_z_sha, par_z_sun, par_z_sha,&
                   rh_can, gs_mol_sun, gs_mol_sha, bsun, bsha, qsatl, qaf, atm2lnd_inst, photosyns_inst, &
                   canopystate_inst, waterdiagnosticbulk_inst, soilstate_inst, temperature_inst, waterfluxbulk_inst)
              x0sun=xsun
@@ -3771,7 +3772,7 @@ contains
           if (iter2 > itmax) then
              x1sun=minxsun
              x1sha=minxsha
-             call ci_func_PHS(x,x1sun, x1sha, f1sun, f1sha, p, iv, c, bsun, bsha, bflag, gb_mol, gs0sun, gs0sha,&
+             call ci_func_PHS(x,x1sun, x1sha, f1sun, f1sha, p, iv, c, g, bsun, bsha, bflag, gb_mol, gs0sun, gs0sha,&
                   gs_mol_sun, gs_mol_sha, jesun, jesha, cair, oair, lmr_z_sun, lmr_z_sha, par_z_sun, par_z_sha, rh_can, &
                   qsatl, qaf, atm2lnd_inst, photosyns_inst, canopystate_inst, waterdiagnosticbulk_inst, soilstate_inst, &
                   temperature_inst, waterfluxbulk_inst)
@@ -3824,7 +3825,7 @@ contains
   
   !------------------------------------------------------------------------------
   subroutine brent_PHS(xsun, x1sun, x2sun, f1sun, f2sun, xsha, x1sha, x2sha, f1sha, f2sha, &
-       tol, ip, iv, ic, gb_mol, jesun, jesha, cair, oair, lmr_z_sun, lmr_z_sha, par_z_sun, par_z_sha,&
+       tol, ip, iv, ic, ig, gb_mol, jesun, jesha, cair, oair, lmr_z_sun, lmr_z_sha, par_z_sun, par_z_sha,&
        rh_can, gs_mol_sun, gs_mol_sha, bsun, bsha, qsatl, qaf, atm2lnd_inst, photosyns_inst, &
        canopystate_inst, waterdiagnosticbulk_inst, soilstate_inst, temperature_inst, waterfluxbulk_inst)
     !------------------------------------------------------------------------------
@@ -3844,7 +3845,7 @@ contains
     real(r8), intent(in)    :: x1sha, x2sha         ! minimum and maximum of the variable domain to search for the solution ci_func(x1) = f1, ci_func(x2)=f2
     real(r8), intent(in)    :: f1sha, f2sha         ! minimum and maximum of the variable domain to search for the solution ci_func(x1) = f1, ci_func(x2)=f2
     real(r8), intent(in)    :: tol                  ! the error tolerance
-    integer , intent(in)    :: ip, iv, ic           ! pft, c3/c4, and column index
+    integer , intent(in)    :: ip, iv, ic, ig       ! pft, c3/c4, column, and grid index
     real(r8), intent(in)    :: gb_mol               ! leaf boundary layer conductance (umol H2O/m**2/s)
     real(r8), intent(in)    :: jesun,jesha          ! electron transport rate (umol electrons/m**2/s)
     real(r8), intent(in)    :: cair                 ! Atmospheric CO2 partial pressure (Pa)
@@ -3962,7 +3963,7 @@ contains
        
        gs0sun = gs_mol_sun
        gs0sha = gs_mol_sha
-       call ci_func_PHS(x,b(sun), b(sha), fb(sun), fb(sha), ip, iv, ic, bsun, bsha, bflag, gb_mol, gs0sun, gs0sha, &
+       call ci_func_PHS(x,b(sun), b(sha), fb(sun), fb(sha), ip, iv, ic, ig, bsun, bsha, bflag, gb_mol, gs0sun, gs0sha, &
             gs_mol_sun, gs_mol_sha, jesun, jesha, cair, oair, lmr_z_sun, lmr_z_sha, par_z_sun, par_z_sha, rh_can, &
             qsatl, qaf, atm2lnd_inst, photosyns_inst, canopystate_inst, waterdiagnosticbulk_inst, soilstate_inst, &
             temperature_inst, waterfluxbulk_inst)
@@ -3979,7 +3980,7 @@ contains
   !--------------------------------------------------------------------------------
   
   !------------------------------------------------------------------------------
-  subroutine ci_func_PHS(x,cisun, cisha, fvalsun, fvalsha, p, iv, c, bsun, bsha, bflag, gb_mol, gs0sun, gs0sha,&
+  subroutine ci_func_PHS(x,cisun, cisha, fvalsun, fvalsha, p, iv, c, g, bsun, bsha, bflag, gb_mol, gs0sun, gs0sha,&
        gs_mol_sun, gs_mol_sha, jesun, jesha, cair, oair, lmr_z_sun, lmr_z_sha, par_z_sun, par_z_sha, rh_can, &
        qsatl, qaf, atm2lnd_inst, photosyns_inst, canopystate_inst, waterdiagnosticbulk_inst, soilstate_inst, &
        temperature_inst, waterfluxbulk_inst)
@@ -3994,13 +3995,14 @@ contains
     !
     ! !USES:
     use clm_varpar        , only : nlevsoi
+
     implicit none
     !
     ! !ARGUMENTS:
     real(r8)               , intent(inout) :: x(nvegwcs)         ! working copy of vegwp(p,:) 
     real(r8)               , intent(in)    :: cisun,cisha        ! intracellular leaf CO2 (Pa)
     real(r8)               , intent(out)   :: fvalsun,fvalsha    ! return function of the value f(ci)
-    integer                , intent(in)    :: p,c,iv             ! pft, column, and radiation indexes
+    integer                , intent(in)    :: p,c,g,iv           ! pft, column, grid, and radiation indexes
     real(r8)               , intent(inout) :: bsun               ! sunlit canopy transpiration wetness factor (0 to 1)
     real(r8)               , intent(inout) :: bsha               ! shaded canopy transpiration wetness factor (0 to 1)
     logical                , intent(in)    :: bflag              ! signals to call calcstress to recalc bsun/bsha (or not)
@@ -4036,8 +4038,8 @@ contains
          forc_pbot  => atm2lnd_inst%forc_pbot_downscaled_col , & ! Input:  [real(r8) (:)   ]    atmospheric pressure (Pa)
          c3flag     => photosyns_inst%c3flag_patch           , & ! Input:  [logical  (:)   ]    true if C3 and false if C4
          ivt        => patch%itype                           , & ! Input:  [integer  (:)   ]  patch vegetation type
-         medlynslope=> pftcon%medlynslope                    , & ! Input:  [real(r8) (:)   ]  Slope for Medlyn stomatal conductance model method
-         medlynintercept=> pftcon%medlynintercept            , & ! Input:  [real(r8) (:)   ]  Intercept for Medlyn stomatal conductance model method
+         medlynslope=> grc%medlynslope                       , & ! Input:  [real(r8) (:)   ]  Slope for Medlyn stomatal conductance model method
+         medlynintercept=> grc%medlynintercept               , & ! Input:  [real(r8) (:)   ]  Intercept for Medlyn stomatal conductance model method
          stomatalcond_mtd=> photosyns_inst%stomatalcond_mtd  , & ! Input:  [integer        ]  method type to use for stomatal conductance.GC.fnlprmsn15_r22845
          ac         => photosyns_inst%ac_phs_patch           , & ! Output: [real(r8) (:,:,:) ]  Rubisco-limited gross photosynthesis (umol CO2/m**2/s)
          aj         => photosyns_inst%aj_phs_patch           , & ! Output: [real(r8) (:,:,:) ]  RuBP-limited gross photosynthesis (umol CO2/m**2/s)
@@ -4127,7 +4129,7 @@ contains
     
     if (an_sun(p,iv) < 0._r8) then
        if ( stomatalcond_mtd == stomatalcond_mtd_medlyn2011 )then
-          gs_mol_sun = medlynintercept(patch%itype(p))
+          gs_mol_sun = medlynintercept(g,patch%itype(p))
        else if ( stomatalcond_mtd == stomatalcond_mtd_bb1987 )then
           gs_mol_sun = bbb(p)
        else
@@ -4138,7 +4140,7 @@ contains
     endif
     if (an_sha(p,iv) < 0._r8) then
        if ( stomatalcond_mtd == stomatalcond_mtd_medlyn2011 )then
-          gs_mol_sha = medlynintercept(patch%itype(p))
+          gs_mol_sha = medlynintercept(g,patch%itype(p))
        else if ( stomatalcond_mtd == stomatalcond_mtd_bb1987 )then
           gs_mol_sha = bbb(p)
        else
@@ -4164,11 +4166,11 @@ contains
        if (an_sun(p,iv) >= 0._r8) then
           term = 1.6_r8 * an_sun(p,iv) / (cs_sun / forc_pbot(c) * 1.e06_r8)
           aquad = 1.0_r8
-          bquad = -(2.0 * (medlynintercept(patch%itype(p))*1.e-06_r8 + term) + (medlynslope(patch%itype(p)) * term)**2 / &
+          bquad = -(2.0 * (medlynintercept(g,patch%itype(p))*1.e-06_r8 + term) + (medlynslope(g,patch%itype(p)) * term)**2 / &
                (gb_mol*1.e-06_r8 * rh_can))
-          cquad = medlynintercept(patch%itype(p))*medlynintercept(patch%itype(p))*1.e-12_r8 + &
-               (2.0*medlynintercept(patch%itype(p))*1.e-06_r8 + term * &
-               (1.0 - medlynslope(patch%itype(p))* medlynslope(patch%itype(p)) / rh_can)) * term
+          cquad = medlynintercept(g,patch%itype(p))*medlynintercept(g,patch%itype(p))*1.e-12_r8 + &
+               (2.0*medlynintercept(g,patch%itype(p))*1.e-06_r8 + term * &
+               (1.0 - medlynslope(g,patch%itype(p))* medlynslope(g,patch%itype(p)) / rh_can)) * term
 
           call quadratic (aquad, bquad, cquad, r1, r2)
           gs_mol_sun = max(r1,r2) * 1.e06_r8
@@ -4181,11 +4183,11 @@ contains
 
           term = 1.6_r8 * an_sha(p,iv) / (cs_sha / forc_pbot(c) * 1.e06_r8)
           aquad = 1.0_r8
-          bquad = -(2.0 * (medlynintercept(patch%itype(p))*1.e-06_r8 + term) + (medlynslope(patch%itype(p)) * term)**2 / &
+          bquad = -(2.0 * (medlynintercept(g,patch%itype(p))*1.e-06_r8 + term) + (medlynslope(g,patch%itype(p)) * term)**2 / &
                (gb_mol*1.e-06_r8 * rh_can))
-          cquad = medlynintercept(patch%itype(p))*medlynintercept(patch%itype(p))*1.e-12_r8 + &
-               (2.0*medlynintercept(patch%itype(p))*1.e-06_r8 + term * (1.0 - medlynslope(patch%itype(p))* &
-               medlynslope(patch%itype(p)) / rh_can)) * term
+          cquad = medlynintercept(g,patch%itype(p))*medlynintercept(g,patch%itype(p))*1.e-12_r8 + &
+               (2.0*medlynintercept(g,patch%itype(p))*1.e-06_r8 + term * (1.0 - medlynslope(g,patch%itype(p))* &
+               medlynslope(g,patch%itype(p)) / rh_can)) * term
 
           call quadratic (aquad, bquad, cquad, r1, r2)
           gs_mol_sha = max(r1,r2)* 1.e06_r8

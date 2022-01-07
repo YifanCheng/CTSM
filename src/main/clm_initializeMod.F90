@@ -15,7 +15,7 @@ module clm_initializeMod
   use clm_varctl            , only : use_lch4, use_cn, use_cndv, use_c13, use_c14, use_fates
   use clm_varctl            , only : nhillslope
   use clm_varctl            , only : use_soil_moisture_streams
-  use clm_instur            , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, fert_cft
+  use clm_instur            , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, fert_cft !, medlynintercept
   use clm_instur            , only : irrig_method, wt_glc_mec, topo_glc_mec, haslake, ncol_per_hillslope
   use perf_mod              , only : t_startf, t_stopf
   use readParamsMod         , only : readParameters
@@ -118,7 +118,7 @@ contains
     ! !USES:
     use clm_varcon                    , only : spval
     use clm_varpar                    , only : natpft_lb, natpft_ub, cft_lb, cft_ub, maxpatch_glcmec
-    use clm_varpar                    , only : nlevsno
+    use clm_varpar                    , only : nlevsno, maxveg, mxpft
     use clm_varctl                    , only : fsurdat
     use clm_varctl                    , only : finidat, finidat_interp_source, finidat_interp_dest, fsurdat
     use clm_varctl                    , only : use_century_decomp, use_cn, use_fates

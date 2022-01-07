@@ -401,9 +401,9 @@ contains
 !      dsl(c) = dzmm(c,1)*max(0.001_r8,(0.8*eff_porosity(c,1) - vwc_liq)) &
 ! try arbitrary scaling (not top layer thickness)
 !            dsl(c) = 15._r8*max(0.001_r8,(0.8*eff_porosity(c,1) - vwc_liq)) &
-            dsl(c) = params_inst%d_max * max(0.001_r8, (params_inst%frac_sat_soil_dsl_init * eff_por_top - vwc_liq)) &
+            dsl(c) = col%d_max(c) * max(0.001_r8, (col%frac_sat_soil_dsl_init(c) * eff_por_top - vwc_liq)) &
                  !           /max(0.001_r8,(watsat(c,1)- aird))
-                 / max(0.001_r8, (params_inst%frac_sat_soil_dsl_init * watsat(c,1) - aird))
+                 / max(0.001_r8, (col%frac_sat_soil_dsl_init(c) * watsat(c,1) - aird))
             
             dsl(c)=max(dsl(c),0._r8)
             dsl(c)=min(dsl(c),200._r8)

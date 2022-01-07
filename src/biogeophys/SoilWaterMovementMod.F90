@@ -9,7 +9,6 @@ module SoilWaterMovementMod
   ! created by Jinyun Tang, Mar 12, 2014
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use shr_sys_mod       , only : shr_sys_flush
- 
   !
   implicit none
   private
@@ -17,7 +16,7 @@ module SoilWaterMovementMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: SoilWater            ! Calculate soil hydrology   
   public :: init_soilwater_movement
-  public :: readParams
+!  public :: readParams
   private :: soilwater_zengdecker2009
   private :: soilwater_moisture_form
 !  private :: soilwater_mixed_form
@@ -30,10 +29,10 @@ module SoilWaterMovementMod
   private :: IceImpedance
   private :: TridiagonalCol
 
-  type, private :: params_type
-     real(r8) :: e_ice                   ! Soil ice impedance factor (unitless)
-  end type params_type
-  type(params_type), private ::  params_inst
+!  type, private :: params_type
+!     real(r8) :: e_ice                   ! Soil ice impedance factor (unitless)
+!  end type params_type
+!  type(params_type), private ::  params_inst
   !
   ! The following is only public for the sake of unit testing; it should not be called
   ! directly by CLM code outside this module
@@ -86,24 +85,24 @@ contains
 
 !#1
   !-----------------------------------------------------------------------
-  subroutine readParams( ncid )
-    !
-    ! !USES:
-    use ncdio_pio, only: file_desc_t
-    use paramUtilMod, only: readNcdioScalar
-    !
-    ! !ARGUMENTS:
-    implicit none
-    type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
-    !
-    ! !LOCAL VARIABLES:
-    character(len=*), parameter :: subname = 'readParams_SoilWaterMovement'
-    !--------------------------------------------------------------------
-
-    ! Soil ice impedance factor (unitless)
-    call readNcdioScalar(ncid, 'e_ice', subname, params_inst%e_ice)
-
-  end subroutine readParams
+!  subroutine readParams( ncid )
+!    !
+!    ! !USES:
+!    use ncdio_pio, only: file_desc_t
+!    use paramUtilMod, only: readNcdioScalar
+!    !
+!    ! !ARGUMENTS:
+!    implicit none
+!    type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
+!    !
+!    ! !LOCAL VARIABLES:
+!    character(len=*), parameter :: subname = 'readParams_SoilWaterMovement'
+!    !--------------------------------------------------------------------
+!
+!    ! Soil ice impedance factor (unitless)
+!    call readNcdioScalar(ncid, 'e_ice', subname, params_inst%e_ice)
+!
+!  end subroutine readParams
 
 !#2
   !-----------------------------------------------------------------------
@@ -734,7 +733,7 @@ contains
             if (origflag == 1) then
                imped(c,j)=(1._r8-0.5_r8*(fracice(c,j)+fracice(c,min(nlevsoi, j+1))))
             else
-               imped(c,j)=10._r8**(-params_inst%e_ice*(0.5_r8*(icefrac(c,j)+icefrac(c,min(nlevsoi, j+1)))))
+               imped(c,j)=10._r8**(-col%e_ice(c)*(0.5_r8*(icefrac(c,j)+icefrac(c,min(nlevsoi, j+1)))))
             endif
             hk(c,j) = imped(c,j)*s1*s2
             dhkdw(c,j) = imped(c,j)*(2._r8*bsw(c,j)+3._r8)*s2* &
@@ -1416,12 +1415,12 @@ contains
          nsubsteps(c) = nsubstep
 
 ! check for negative moisture values
-         do j = 2, nlayers
-            if(h2osoi_liq(c,j) < -1e-6_r8) then
-               write(*,*) 'layer, h2osoi_liq: ', c,j,h2osoi_liq(c,j)
-               !      call endrun(subname // ':: negative soil moisture values found!')
-            endif
-         end do
+!         do j = 2, nlayers
+!            if(h2osoi_liq(c,j) < -1e-6_r8) then
+!               write(*,*) 'layer, h2osoi_liq: ', c,j,h2osoi_liq(c,j)
+!               !      call endrun(subname // ':: negative soil moisture values found!')
+!            endif
+!         end do
 
       end do  ! spatial loop
 
@@ -1487,7 +1486,7 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: j                              ! do loop indices
     real(r8) :: s1                             ! "s" at interface of layer
- real(r8) :: s2(1:nlayers)                     ! "s" at layer node
+    real(r8) :: s2(1:nlayers)                     ! "s" at layer node
     real(r8) :: dsmpds                         !temporary variable
     real(r8) :: dhkds                          !temporary variable
     character(len=32)  :: subname = 'calculate_hydraulic_properties'     ! subroutine name   
@@ -1524,10 +1523,10 @@ contains
             ! s1 is interface value, s2 is node value
             if(j==nlayers)then
              s1 = s2(j)
-             call IceImpedance(icefrac(c,j), imped(j) )
+             call IceImpedance(icefrac(c,j), imped(j) , col%e_ice(c))
             else
              s1 = 0.5_r8 * (s2(j) + s2(j+1))
-             call IceImpedance(0.5_r8*(icefrac(c,j) + icefrac(c,j+1)), imped(j) )
+             call IceImpedance(0.5_r8*(icefrac(c,j) + icefrac(c,j+1)), imped(j), col%e_ice(c))
             endif
 
   ! impose constraints on relative saturation at the layer interface
@@ -2144,7 +2143,7 @@ contains
 
 !#13
   !-----------------------------------------------------------------------
-  subroutine IceImpedance(icefrac, imped)
+  subroutine IceImpedance(icefrac, imped, e_ice)
     !
     !DESCRIPTION
     ! compute soil suction potential
@@ -2156,14 +2155,14 @@ contains
     ! !ARGUMENTS:
     implicit none
     real(r8), intent(in)  :: icefrac    !fraction of pore space filled with ice
-
+    real(r8), intent(in)  :: e_ice      !Soil ice impedance factor (unitless)
     real(r8), intent(out) :: imped      !hydraulic conductivity reduction due to the presence of ice in pore space
     !
     ! !LOCAL VARIABLES:
     character(len=32) :: subname = 'IceImpedance'  ! subroutine name
     !------------------------------------------------------------------------------
 
-    imped = 10._r8**(-params_inst%e_ice*icefrac)
+    imped = 10._r8**(-e_ice*icefrac)
 
   end subroutine IceImpedance
 

@@ -11,7 +11,8 @@ module GridcellType
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use landunit_varcon, only : max_lunit
-  use clm_varcon     , only : ispval
+  use clm_varcon     , only : ispval, spval
+  use clm_varpar     , only : mxpft
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -42,7 +43,11 @@ module GridcellType
      ! this is for efficiency, since most loops will go over g in the outer loop, and
      ! landunit type in the inner loop)
      integer , pointer :: landunit_indices (:,:) 
-
+     
+     ! read in spatially distributed parameters
+     real(r8) , pointer :: medlynintercept (:,:) !
+     real(r8) , pointer :: medlynslope     (:,:)  
+     real(r8) , pointer :: krmax           (:,:)
    contains
 
      procedure, public :: Init
@@ -78,7 +83,9 @@ contains
     allocate(this%prev_dayl (begg:endg)) ; this%prev_dayl (:) = nan
 
     allocate(this%landunit_indices(1:max_lunit, begg:endg)); this%landunit_indices(:,:) = ispval
-
+    allocate(this%medlynintercept (begg:endg  , 0:mxpft  )); this%medlynintercept (:,:) = spval
+    allocate(this%medlynslope     (begg:endg  , 0:mxpft  )); this%medlynslope     (:,:) = spval
+    allocate(this%krmax           (begg:endg  , 0:mxpft  )); this%krmax           (:,:) = spval
   end subroutine Init
 
   !------------------------------------------------------------------------
@@ -100,6 +107,9 @@ contains
     deallocate(this%dayl             )
     deallocate(this%prev_dayl        )
     deallocate(this%landunit_indices )
+    deallocate(this%medlynintercept  )
+    deallocate(this%medlynslope      )
+    deallocate(this%krmax            )
 
   end subroutine Clean
 

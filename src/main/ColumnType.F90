@@ -81,6 +81,20 @@ module ColumnType
      logical , pointer :: hydrologically_active(:)   ! true if this column is a hydrologically active type
      logical , pointer :: urbpoi               (:)   ! true=>urban point
 
+     ! spatially distribution parameters
+     real(r8), pointer :: ssi                  (:)   ! Irreducible water saturation of snow (unitless)
+     real(r8), pointer :: n_melt_coef          (:)   ! n_melt parameter (unitless)
+     real(r8), pointer :: e_ice                (:)   ! Soil ice impedance factor (unitless)
+     real(r8), pointer :: fff                  (:)   ! Decay factor for fractional saturated area (1/m)
+     real(r8), pointer :: upplim_destruct_metamorph (:) ! Upper Limit on Destructive Metamorphism Compaction [kg/m3]
+     real(r8), pointer :: om_frac_sf           (:)   ! Scale factor for organic matter fraction (unitless)
+     logical , pointer :: upp_dst_meta_surf          ! Determine whether upplim_destruct_metamorph exists in surface dataset
+     real(r8), pointer :: d_max                (:)   ! Dry surface layer parameter (mm)
+     real(r8), pointer :: frac_sat_soil_dsl_init    (:) ! Fraction of saturated soil for moisture value at which DSL initiates (unitless)
+     real(r8), pointer :: snw_rds_refrz        (:)   ! Effective radius of re-frozen snow (microns)
+     real(r8), pointer :: a_coef               (:)   ! Drag coefficient under less dense canopy (unitless)
+     real(r8), pointer :: vcmaxha              (:)   ! Activation energy for vcmax (J/mol) 
+     real(r8), pointer :: cv                   (:)   ! Turbulent transfer coeff. between canopy surface and canopy air (m/s^(1/2))
      ! levgrnd_class gives the class in which each layer falls. This is relevant for
      ! columns where there are 2 or more fundamentally different layer types. For
      ! example, this distinguishes between soil and bedrock layers. The particular value
@@ -155,6 +169,20 @@ contains
     allocate(this%hydrologically_active(begc:endc))            ; this%hydrologically_active(:) = .false.
     allocate(this%urbpoi      (begc:endc))                     ; this%urbpoi      (:)   = .false.
 
+    ! Spatially distributed parameters
+    allocate(this%ssi         (begc:endc))                     ; this%ssi         (:)   = spval
+    allocate(this%n_melt_coef (begc:endc))                     ; this%n_melt_coef (:)   = spval
+    allocate(this%e_ice       (begc:endc))                     ; this%e_ice       (:)   = spval
+    allocate(this%fff         (begc:endc))                     ; this%fff         (:)   = spval
+    allocate(this%upplim_destruct_metamorph(begc:endc))        ; this%upplim_destruct_metamorph(:) = spval
+    allocate(this%om_frac_sf  (begc:endc))                     ; this%om_frac_sf  (:)   = spval
+    allocate(this%upp_dst_meta_surf      )                     ; this%upp_dst_meta_surf = .false.
+    allocate(this%d_max       (begc:endc))                     ; this%d_max       (:)   = spval
+    allocate(this%frac_sat_soil_dsl_init   (begc:endc))        ; this%frac_sat_soil_dsl_init   (:) = spval
+    allocate(this%snw_rds_refrz(begc:endc))                    ; this%snw_rds_refrz(:)  = spval
+    allocate(this%a_coef      (begc:endc))                     ; this%a_coef      (:)   = spval
+    allocate(this%vcmaxha     (begc:endc))                     ; this%vcmaxha     (:)   = spval
+    allocate(this%cv          (begc:endc))                     ; this%cv          (:)   = spval
   end subroutine Init
 
   !------------------------------------------------------------------------
@@ -201,6 +229,19 @@ contains
     deallocate(this%hill_distance)
     deallocate(this%hill_aspect  )
     deallocate(this%urbpoi     )
+    deallocate(this%ssi        )
+    deallocate(this%n_melt_coef)
+    deallocate(this%e_ice      )
+    deallocate(this%fff        )
+    deallocate(this%upplim_destruct_metamorph)
+    deallocate(this%om_frac_sf )
+    deallocate(this%upp_dst_meta_surf        )
+    deallocate(this%d_max      )
+    deallocate(this%frac_sat_soil_dsl_init   )
+    deallocate(this%snw_rds_refrz            )
+    deallocate(this%a_coef     )
+    deallocate(this%vcmaxha    )
+    deallocate(this%cv         )
   end subroutine Clean
 
   !-----------------------------------------------------------------------

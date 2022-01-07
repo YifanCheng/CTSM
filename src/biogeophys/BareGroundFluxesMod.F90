@@ -329,7 +329,7 @@ contains
 
             tstar = temp1(p)*dth(p)
             qstar = temp2(p)*dqh(p)
-            z0hg_patch(p) = z0mg_patch(p) / exp(params_inst%a_coef * (ustar(p) * z0mg_patch(p) / 1.5e-5_r8)**params_inst%a_exp)
+            z0hg_patch(p) = z0mg_patch(p) / exp(col%a_coef(c) * (ustar(p) * z0mg_patch(p) / 1.5e-5_r8)**params_inst%a_exp)
             z0qg_patch(p) = z0hg_patch(p)
             thvstar = tstar*(1._r8+0.61_r8*forc_q(c)) + 0.61_r8*forc_th(c)*qstar
             zeta = zldis(p)*vkc*grav*thvstar/(ustar(p)**2*thv(c))

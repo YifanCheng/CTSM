@@ -28,7 +28,7 @@ module SoilHydrologyInitTimeConstMod
   private :: linear_interp     ! function for linear interperation 
   type, private :: params_type
      real(r8) :: pc            ! Threshold probability for surface water (unitless)
-     real(r8) :: om_frac_sf    ! Scale factor for organic matter fraction (unitless)
+!     real(r8) :: om_frac_sf    ! Scale factor for organic matter fraction (unitless)
   end type params_type
   type(params_type), private ::  params_inst
 
@@ -55,8 +55,8 @@ contains
 
     ! Threshold probability for surface water (unitless)
     call readNcdioScalar(ncid, 'pc', subname, params_inst%pc)
-    ! Scale factor for om_frac (unitless)
-    call readNcdioScalar(ncid, 'om_frac_sf', subname, params_inst%om_frac_sf)
+!    ! Scale factor for om_frac (unitless)
+!    call readNcdioScalar(ncid, 'om_frac_sf', subname, params_inst%om_frac_sf)
 
   end subroutine readParams
 
@@ -187,7 +187,7 @@ contains
                    if ( lev <= nlevsoi )then
                       claycol(c,lev)    = soilstate_inst%cellclay_col(c,lev)
                       sandcol(c,lev)    = soilstate_inst%cellsand_col(c,lev)
-                      om_fraccol(c,lev) = min(params_inst%om_frac_sf*soilstate_inst%cellorg_col(c,lev) / organic_max, 1._r8)
+                      om_fraccol(c,lev) = min(col%om_frac_sf(c)*soilstate_inst%cellorg_col(c,lev) / organic_max, 1._r8)
                    else
                       claycol(c,lev)    = soilstate_inst%cellclay_col(c,nlevsoi)
                       sandcol(c,lev)    = soilstate_inst%cellsand_col(c,nlevsoi)

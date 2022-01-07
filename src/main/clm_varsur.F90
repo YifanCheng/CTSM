@@ -51,6 +51,7 @@ module clm_instur
 
   ! subgrid hillslope hydrology constituents
   integer, pointer :: ncol_per_hillslope(:) 
+
   !-----------------------------------------------------------------------
 
 end module clm_instur

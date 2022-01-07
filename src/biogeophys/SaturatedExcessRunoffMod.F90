@@ -50,12 +50,12 @@ module SaturatedExcessRunoffMod
      procedure, private, nopass :: ComputeFsatTopmodel
      procedure, private, nopass :: ComputeFsatVic
   end type saturated_excess_runoff_type
-  public :: readParams
+!  public :: readParams
 
-  type, private :: params_type
-     real(r8) :: fff  ! Decay factor for fractional saturated area (1/m)
-  end type params_type
-  type(params_type), private ::  params_inst
+!  type, private :: params_type
+!     real(r8) :: fff  ! Decay factor for fractional saturated area (1/m)
+!  end type params_type
+!  type(params_type), private ::  params_inst
 
   ! !PRIVATE DATA MEMBERS:
 
@@ -176,24 +176,24 @@ contains
   end subroutine InitCold
 
   !-----------------------------------------------------------------------
-  subroutine readParams( ncid )
-    !
-    ! !USES:
-    use ncdio_pio, only: file_desc_t
-    use paramUtilMod, only: readNcdioScalar
-    !
-    ! !ARGUMENTS:
-    implicit none
-    type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
-    !
-    ! !LOCAL VARIABLES:
-    character(len=*), parameter :: subname = 'readParams_SaturatedExcessRunoff'
-    !--------------------------------------------------------------------
-
-    ! Decay factor for fractional saturated area (1/m)
-    call readNcdioScalar(ncid, 'fff', subname, params_inst%fff)
-
-  end subroutine readParams
+!  subroutine readParams( ncid )
+!    !
+!    ! !USES:
+!    use ncdio_pio, only: file_desc_t
+!    use paramUtilMod, only: readNcdioScalar
+!    !
+!    ! !ARGUMENTS:
+!    implicit none
+!    type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
+!    !
+!    ! !LOCAL VARIABLES:
+!    character(len=*), parameter :: subname = 'readParams_SaturatedExcessRunoff'
+!    !--------------------------------------------------------------------
+!
+!    ! Decay factor for fractional saturated area (1/m)
+!    call readNcdioScalar(ncid, 'fff', subname, params_inst%fff)
+!
+!  end subroutine readParams
 
   ! ========================================================================
   ! Science routines
@@ -246,7 +246,7 @@ contains
     select case (this%fsat_method)
     case (FSAT_METHOD_TOPMODEL)
        call this%ComputeFsatTopmodel(bounds, num_hydrologyc, filter_hydrologyc, &
-            soilhydrology_inst, soilstate_inst, &
+            col, soilhydrology_inst, soilstate_inst, &
             fsat = fsat(bounds%begc:bounds%endc))
     case (FSAT_METHOD_VIC)
        call this%ComputeFsatVic(bounds, num_hydrologyc, filter_hydrologyc, &
@@ -317,7 +317,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine ComputeFsatTopmodel(bounds, num_hydrologyc, filter_hydrologyc, &
-       soilhydrology_inst, soilstate_inst, fsat)
+       col, soilhydrology_inst, soilstate_inst, fsat)
     !
     ! !DESCRIPTION:
     ! Compute fsat using the TOPModel-based parameterization
@@ -328,13 +328,14 @@ contains
     type(bounds_type), intent(in) :: bounds
     integer, intent(in) :: num_hydrologyc       ! number of column soil points in column filter
     integer, intent(in) :: filter_hydrologyc(:) ! column filter for soil points
-    type(soilhydrology_type) , intent(in) :: soilhydrology_inst
-    type(soilstate_type), intent(in) :: soilstate_inst
+    type(column_type)        , intent(in)    :: col
+    type(soilhydrology_type) , intent(in)    :: soilhydrology_inst
+    type(soilstate_type)     , intent(in)    :: soilstate_inst
     real(r8), intent(inout) :: fsat( bounds%begc: ) ! fractional area with water table at surface
     !
     ! !LOCAL VARIABLES:
     integer  :: fc, c
-    real(r8) :: fff ! decay factor (m-1)
+!    real(r8) :: fff ! decay factor (m-1)
 
     character(len=*), parameter :: subname = 'ComputeFsatTopmodel'
     !-----------------------------------------------------------------------
@@ -353,9 +354,9 @@ contains
        c = filter_hydrologyc(fc)
        if (frost_table(c) > zwt_perched(c) .and. frost_table(c) <= zwt(c)) then
           ! use perched water table to determine fsat (if present)
-          fsat(c) = wtfact(c) * exp(-0.5_r8*params_inst%fff*zwt_perched(c))
+          fsat(c) = wtfact(c) * exp(-0.5_r8*col%fff(c)*zwt_perched(c))
        else
-          fsat(c) = wtfact(c) * exp(-0.5_r8*params_inst%fff*zwt(c))
+          fsat(c) = wtfact(c) * exp(-0.5_r8*col%fff(c)*zwt(c))
        end if
     end do
 

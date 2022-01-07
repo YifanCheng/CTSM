@@ -220,6 +220,9 @@ contains
     real(r8) ,pointer  :: sand3d (:,:)                  ! read in - soil texture: percent sand (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: clay3d (:,:)                  ! read in - soil texture: percent clay (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: organic3d (:,:)               ! read in - organic matter: kg/m3 (needs to be a pointer for use in ncdio)
+    real(r8) ,pointer  :: hksat_sf (:)                  ! read in - [param] Scale factor for hksat (unitless)
+    real(r8) ,pointer  :: sucsat_sf (:)                 ! read in - [param] Scale factor for sucsat (unitless)
+    real(r8) ,pointer  :: soil_om_frac_sf(:)            ! read in - [param] Scale factor for organic matter fraction (unitless)
     character(len=256) :: locfn                         ! local filename
     integer            :: ipedof  
     integer            :: begp, endp
@@ -364,6 +367,41 @@ contains
     deallocate(gti)
 
     ! Close file
+    ! Read spatially distributed parameters - hksat_sf, sucsat_sf
+    allocate(hksat_sf(begg:endg))
+    call ncd_io(ncid=ncid, varname='hksat_sf', flag='read', data=hksat_sf, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+!       call endrun(msg=' ERROR: hksat_sf NOT on surfdata file'//errMsg(sourcefile, __LINE__))
+        hksat_sf(:) = params_inst%hksat_sf
+        write(iulog,*) "source of param - hksat_sf is: parameter file"
+    else
+        write(iulog,*) "source of param - hksat_sf is: surface data file" 
+    end if
+
+    allocate(sucsat_sf(begg:endg))
+    call ncd_io(ncid=ncid, varname='sucsat_sf', flag='read', data=sucsat_sf, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+!       call endrun(msg=' ERROR: sucsat_sf NOT on surfdata file'//errMsg(sourcefile, __LINE__))
+        sucsat_sf(:) = params_inst%sucsat_sf
+        write(iulog,*) "source of param - sucsat_sf is: parameter file"
+    else
+        write(iulog,*) "source of param - sucsat_sf is: surface data file"
+    end if
+
+    allocate(soil_om_frac_sf(begg:endg))
+    call ncd_io(ncid=ncid, varname='om_frac_sf', flag='read', data=soil_om_frac_sf, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+!       call endrun(msg=' ERROR: om_frac_sf NOT on surfdata file'//errMsg(sourcefile, __LINE__))
+       col%om_frac_sf(:) = params_inst%om_frac_sf
+       write(iulog,*) "source of param - om_frac_sf is: parameter file" 
+    else
+       do c = begc, endc
+          g = col%gridcell(c)
+          col%om_frac_sf(c) = soil_om_frac_sf(g)
+       end do
+       write(iulog,*) "source of param - om_frac_sf is: surface data file"
+    end if 
+    deallocate(soil_om_frac_sf)
 
     call ncd_pio_closefile(ncid)
 
@@ -442,20 +480,20 @@ contains
              if (lev .eq. 1) then
                 clay = clay3d(g,1)
                 sand = sand3d(g,1)
-                om_frac = min(params_inst%om_frac_sf*organic3d(g,1)/organic_max, 1._r8)
+                om_frac = min(col%om_frac_sf(c)*organic3d(g,1)/organic_max, 1._r8)
              else if (lev <= nlevsoi) then
                 found = 0  ! reset value
                 if (zsoi(lev) <= zisoifl(1)) then
                    ! Search above the dataset's range of zisoifl depths
                    clay = clay3d(g,1)
                    sand = sand3d(g,1)
-                   om_frac = min(params_inst%om_frac_sf*organic3d(g,1)/organic_max, 1._r8)
+                   om_frac = min(col%om_frac_sf(c)*organic3d(g,1)/organic_max, 1._r8)
                    found = 1
                 else if (zsoi(lev) > zisoifl(nlevsoifl)) then
                    ! Search below the dataset's range of zisoifl depths
                    clay = clay3d(g,nlevsoifl)
                    sand = sand3d(g,nlevsoifl)
-                   om_frac = min(params_inst%om_frac_sf*organic3d(g,nlevsoifl)/organic_max, 1._r8)
+                   om_frac = min(col%om_frac_sf(c)*organic3d(g,nlevsoifl)/organic_max, 1._r8)
                    found = 1
                 else
                    ! For remaining model soil levels, search within dataset's
@@ -465,7 +503,7 @@ contains
                       if (zsoi(lev) > zisoifl(j) .AND. zsoi(lev) <= zisoifl(j+1)) then
                          clay = clay3d(g,j+1)
                          sand = sand3d(g,j+1)
-                         om_frac = min(params_inst%om_frac_sf*organic3d(g,j+1)/organic_max, 1._r8)
+                         om_frac = min(col%om_frac_sf(c)*organic3d(g,j+1)/organic_max, 1._r8)
                          found = 1
                       endif
                       if (found == 1) exit  ! no need to stay in the loop
@@ -541,7 +579,8 @@ contains
                                                       (sand+clay)+params_inst%tkm_om*om_frac ! W/(m K)
                 soilstate_inst%bsw_col(c,lev)       = params_inst%bsw_sf * ( (1._r8-om_frac) * &
                                                       (2.91_r8 + 0.159_r8*clay) + om_frac*om_b )
-                soilstate_inst%sucsat_col(c,lev)    = params_inst%sucsat_sf * ( (1._r8-om_frac) * &
+!                soilstate_inst%sucsat_col(c,lev)    = params_inst%sucsat_sf * ( (1._r8-om_frac) * &
+                soilstate_inst%sucsat_col(c,lev)    = sucsat_sf(g) * ( (1._r8-om_frac) * &
                                                       soilstate_inst%sucsat_col(c,lev) + om_sucsat*om_frac ) 
                 soilstate_inst%hksat_min_col(c,lev) = xksat
 
@@ -563,7 +602,8 @@ contains
                 else
                    uncon_hksat = 0._r8
                 end if
-                soilstate_inst%hksat_col(c,lev)  = params_inst%hksat_sf * ( uncon_frac*uncon_hksat + &
+!                soilstate_inst%hksat_col(c,lev)  = params_inst%hksat_sf * ( uncon_frac*uncon_hksat + &
+                soilstate_inst%hksat_col(c,lev)  = hksat_sf(g) * ( uncon_frac*uncon_hksat + &
                                                    (perc_frac*om_frac)*om_hksat )
 
                 soilstate_inst%tkmg_col(c,lev)   = tkm ** (1._r8- soilstate_inst%watsat_col(c,lev))           
@@ -618,9 +658,9 @@ contains
                 clay    =  soilstate_inst%cellclay_col(c,lev)
                 sand    =  soilstate_inst%cellsand_col(c,lev)
                 if ( organic_frac_squared )then
-                   om_frac = min(params_inst%om_frac_sf*((soilstate_inst%cellorg_col(c,lev)/organic_max)**2._r8), 1._r8)
+                   om_frac = min(col%om_frac_sf(c)*((soilstate_inst%cellorg_col(c,lev)/organic_max)**2._r8), 1._r8)
                 else
-                   om_frac = min(params_inst%om_frac_sf*soilstate_inst%cellorg_col(c,lev)/organic_max, 1._r8)
+                   om_frac = min(col%om_frac_sf(c)*soilstate_inst%cellorg_col(c,lev)/organic_max, 1._r8)
                 end if
              else
                 clay    = soilstate_inst%cellclay_col(c,nlevsoi)
@@ -646,7 +686,8 @@ contains
              soilstate_inst%bsw_col(c,lev)    = params_inst%bsw_sf * ( (1._r8-om_frac) * &
                    (2.91_r8 + 0.159_r8*clay) + om_frac * om_b_lake )
 
-             soilstate_inst%sucsat_col(c,lev) = params_inst%sucsat_sf * ( (1._r8-om_frac) * &
+!             soilstate_inst%sucsat_col(c,lev) = params_inst%sucsat_sf * ( (1._r8-om_frac) * &
+             soilstate_inst%sucsat_col(c,lev) = sucsat_sf(g) * ( (1._r8-om_frac) * &
                    soilstate_inst%sucsat_col(c,lev) + om_sucsat_lake * om_frac )
 
              xksat = 0.0070556 *( 10.**(-0.884+0.0153*sand) ) ! mm/s
@@ -670,7 +711,8 @@ contains
                 uncon_hksat = 0._r8
              end if
 
-             soilstate_inst%hksat_col(c,lev)  = params_inst%hksat_sf * ( uncon_frac*uncon_hksat + &
+!             soilstate_inst%hksat_col(c,lev)  = params_inst%hksat_sf * ( uncon_frac*uncon_hksat + &
+             soilstate_inst%hksat_col(c,lev)  = hksat_sf(g) * ( uncon_frac*uncon_hksat + &
                                        (perc_frac*om_frac)*om_hksat_lake )
              soilstate_inst%tkmg_col(c,lev)   = tkm ** (1._r8- soilstate_inst%watsat_col(c,lev))
              soilstate_inst%tksatu_col(c,lev) = soilstate_inst%tkmg_col(c,lev)*0.57_r8**soilstate_inst%watsat_col(c,lev)
@@ -710,6 +752,7 @@ contains
 
     deallocate(sand3d, clay3d, organic3d)
     deallocate(zisoifl, zsoifl)
+    deallocate(hksat_sf, sucsat_sf)    
 
   end subroutine SoilStateInitTimeConst
 

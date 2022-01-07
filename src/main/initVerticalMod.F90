@@ -12,7 +12,7 @@ module initVerticalMod
   use shr_sys_mod       , only : shr_sys_abort
   use decompMod         , only : bounds_type
   use spmdMod           , only : masterproc
-  use clm_varpar        , only : nlevsno, nlevgrnd, nlevlak
+  use clm_varpar        , only : nlevsno, nlevgrnd, nlevlak, mxpft
   use clm_varpar        , only : toplev_equalspace, nlev_equalspace
   use clm_varpar        , only : nlevsoi, nlevsoifl, nlevurb, nlevmaxurbgrnd
   use clm_varctl        , only : fsurdat, iulog
@@ -47,6 +47,16 @@ module initVerticalMod
   type, private :: params_type
      real(r8) :: slopebeta      ! exponent for microtopography pdf sigma (unitless)
      real(r8) :: slopemax       ! max topographic slope for microtopography pdf sigma (unitless)
+     real(r8) :: e_ice          ! Soil ice impedance factor (unitless)
+     real(r8) :: fff            ! Decay factor for fractional saturated area (1/m)
+     real(r8) :: ssi            ! Irreducible water saturation of snow (unitless) 
+     real(r8) :: n_melt_coef    ! n_melt parameter (unitless) 
+     real(r8) :: d_max          ! Dry surface layer parameter (mm)
+     real(r8) :: frac_sat_soil_dsl_init !  Fraction of saturated soil for moisture value at which DSL initiates (unitless) 
+     real(r8) :: snw_rds_refrz  ! Effective radius of re-frozen snow (microns)
+     real(r8) :: a_coef         ! Drag coefficient under less dense canopy (unitless)
+     real(r8) :: vcmaxha        ! Activation energy for vcmax (J/mol)
+     real(r8) :: cv             ! Turbulent transfer coeff. between canopy surface and canopy air (m/s^(1/2)) 
   end type params_type
   type(params_type), private ::  params_inst
   !
@@ -77,13 +87,24 @@ contains
     ! Exponent for microtopography pdf sigma (unitless)
     call readNcdioScalar(ncid, 'slopebeta', subname, params_inst%slopebeta)
     ! Max topographic slope for microtopography pdf sigma (unitless) 
-    call readNcdioScalar(ncid, 'slopemax', subname, params_inst%slopemax)
-
+    call readNcdioScalar(ncid, 'slopemax' , subname, params_inst%slopemax)
+    ! e_ice
+    call readNcdioScalar(ncid, 'e_ice'    , subname, params_inst%e_ice)
+    call readNcdioScalar(ncid, 'fff'      , subname, params_inst%fff)
+    call readNcdioScalar(ncid, 'ssi'      , subname, params_inst%ssi)
+    call readNcdioScalar(ncid, 'n_melt_coef'           , subname, params_inst%n_melt_coef           )
+    call readNcdioScalar(ncid, 'd_max'    , subname, params_inst%d_max)
+    call readNcdioScalar(ncid, 'frac_sat_soil_dsl_init', subname, params_inst%frac_sat_soil_dsl_init)
+    call readNcdioScalar(ncid, 'snw_rds_refrz'         , subname, params_inst%snw_rds_refrz         )
+    call readNcdioScalar(ncid, 'a_coef'   , subname, params_inst%a_coef)
+    call readNcdioScalar(ncid, 'vcmaxha'  , subname, params_inst%vcmaxha)
+    call readNcdioScalar(ncid, 'cv'       , subname, params_inst%cv)
   end subroutine readParams
 
   !------------------------------------------------------------------------
   subroutine initVertical(bounds, glc_behavior, snow_depth, thick_wall, thick_roof)
     use clm_varcon, only : zmin_bedrock
+    use pftconMod , only : pftcon
     !
     ! !ARGUMENTS:
     type(bounds_type)   , intent(in)    :: bounds
@@ -117,6 +138,22 @@ contains
     integer               :: begc, endc
     integer               :: begl, endl
     integer               :: jmin_bedrock
+    real(r8) ,pointer     :: snowhydro_ssi (:) ! read in params - ssi
+    real(r8) ,pointer     :: snowhydro_n_melt_coef (:) ! read in params - n_melt_coef
+    real(r8) ,pointer     :: hydro_e_ice   (:) ! read in params - e_ice
+    real(r8) ,pointer     :: hydro_fff     (:) ! read in params - fff
+    real(r8) ,pointer     :: slopebeta_2d  (:) ! read in params - slopebeta
+    real(r8) ,pointer     :: snowhydro_upp_dst_meta(:) ! read in params - upplim_destruct_metamorph
+    real(r8) ,pointer     :: temp_medlynintercept  (:,:) ! read in params - medlyninterceipt
+    real(r8) ,pointer     :: temp_medlynslope      (:,:) ! read in params - medlynslope
+    real(r8) ,pointer     :: sen_d_max     (:) ! read in params - d_max
+    real(r8) ,pointer     :: sen_frac_sat_soil     (:) ! read in params - frac_sat_soil_dsl_init
+    real(r8) ,pointer     :: snowhydro_snw_rds_refrz(:)! read in params - snw_rds_refrz
+    real(r8) ,pointer     :: sen_a_coef    (:) ! read in params - a_coef
+    real(r8) ,pointer     :: acc_vcmaxha   (:) ! read in params - vcmaxha
+    real(r8) ,pointer     :: sen_cv        (:) ! read in params - cv
+    real(r8) ,pointer     :: temp_krmax            (:,:) ! read in params - krmax
+
     ! Possible values for levgrnd_class. The important thing is that, for a given column,
     ! layers that are fundamentally different (e.g., soil vs bedrock) have different
     ! values. This information is used in the vertical interpolation in init_interp.
@@ -713,14 +750,255 @@ contains
     deallocate(std)
 
     !-----------------------------------------------
+    ! Read in spatially distributed parameters
+    !-----------------------------------------------
+    allocate(snowhydro_ssi(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='ssi', flag='read', data=snowhydro_ssi, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+!       call shr_sys_abort(' ERROR: ssi NOT on surfdata file'//&
+!            errMsg(sourcefile, __LINE__))
+       col%ssi(:) = params_inst%ssi
+       write(iulog,*) "source of param - ssi is: parameter file"
+    else
+       do c = begc,endc
+          g = col%gridcell(c)
+          ! check for near zero slopes, set minimum value
+          col%ssi(c) = snowhydro_ssi(g) 
+       end do
+       write(iulog,*) "source of param - ssi is: surface data file"
+    end if
+    deallocate(snowhydro_ssi)
+
+    allocate(snowhydro_n_melt_coef(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='n_melt_coef', flag='read', data=snowhydro_n_melt_coef, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+!       call shr_sys_abort(' ERROR: n_melt_coef NOT on surfdata file'//&
+!            errMsg(sourcefile, __LINE__))
+       col%n_melt_coef(:) = params_inst%n_melt_coef
+       write(iulog,*) "source of param - n_melt_coef is : parameter file"
+    else
+       do c = begc,endc
+          g = col%gridcell(c)
+          ! check for near zero slopes, set minimum value
+          col%n_melt_coef(c) = snowhydro_n_melt_coef(g)
+       write(iulog,*) "source of param - n_melt_coef is : surface data file"
+       end do
+    end if
+    deallocate(snowhydro_n_melt_coef)
+
+    allocate(hydro_e_ice(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='e_ice', flag='read', data=hydro_e_ice, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+!       call shr_sys_abort(' ERROR: e_ice NOT on surfdata file'//&
+!            errMsg(sourcefile, __LINE__))
+       col%e_ice(:) = params_inst%e_ice
+       write(iulog,*) "source of param - e_ice is: parameter file" 
+    else
+       do c = begc,endc
+          g = col%gridcell(c)
+          ! check for near zero slopes, set minimum value
+          col%e_ice(c) = hydro_e_ice(g)
+       end do
+        write(iulog,*) "source of param - e_ice is: surface data file"
+    end if
+    deallocate(hydro_e_ice)
+
+    ! read in - fff
+    allocate(hydro_fff(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='fff', flag='read', data=hydro_fff, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+!       call shr_sys_abort(' ERROR: fff NOT on surfdata file'//&
+!            errMsg(sourcefile, __LINE__))
+       col%fff(:) = params_inst%fff
+       write(iulog,*) "source of param - fff is: parameter file"
+    else
+       do c = begc,endc
+          g = col%gridcell(c)
+          col%fff(c) = hydro_fff(g)
+       end do
+       write(iulog,*) "source of param - fff is: surface data file"
+    end if
+    deallocate(hydro_fff)
+
+    ! read in upplim_destruct_metamorph
+    allocate(snowhydro_upp_dst_meta(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='upplim_destruct_metamorph', flag='read', data=snowhydro_upp_dst_meta, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       col%upp_dst_meta_surf = .false.
+       write(iulog,*) "source of param - upplim_destruct_metamorph is: namelist file"
+    else
+       col%upp_dst_meta_surf = .true.
+       do c = begc,endc
+          g = col%gridcell(c)
+          col%upplim_destruct_metamorph(c) = snowhydro_upp_dst_meta(g)
+       end do
+       write(iulog,*) "source of param - upplim_destruct_metamorph is: surface data file"
+    end if
+    deallocate(snowhydro_upp_dst_meta)
+
+    ! read in d_max
+    allocate(sen_d_max(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='d_max', flag='read', data=sen_d_max, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       col%d_max(:) = params_inst%d_max
+       write(iulog,*) "source of param - d_max is: parameter file"
+    else
+       do c = begc,endc
+          g = col%gridcell(c)
+          col%d_max(c) = sen_d_max(g)
+       end do
+       write(iulog,*) "source of param - d_max is: surface data file"
+    end if
+    deallocate(sen_d_max)
+
+    ! read in frac_sat_soil_dsl_init 
+    allocate(sen_frac_sat_soil(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='frac_sat_soil_dsl_init', flag='read', data=sen_frac_sat_soil, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       col%frac_sat_soil_dsl_init(:) = params_inst%frac_sat_soil_dsl_init
+       write(iulog,*) "source of param - frac_sat_soil_dsl_init is: parameter file"
+    else
+       do c = begc,endc
+          g = col%gridcell(c)
+          col%frac_sat_soil_dsl_init(c) = sen_frac_sat_soil(g)
+       end do
+       write(iulog,*) "source of param - frac_sat_soil_dsl_init is: surface data file"
+    end if
+    deallocate(sen_frac_sat_soil)
+
+    ! read in snowhydro_snw_rds_refrz 
+    allocate(snowhydro_snw_rds_refrz(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='snw_rds_refrz', flag='read', data=snowhydro_snw_rds_refrz, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       col%snw_rds_refrz(:) = params_inst%snw_rds_refrz
+       write(iulog,*) "source of param - snw_rds_refrz is: parameter file"
+    else
+       do c = begc,endc
+          g = col%gridcell(c)
+          col%snw_rds_refrz(c) = snowhydro_snw_rds_refrz(g)
+       end do
+       write(iulog,*) "source of param - snw_rds_refrz is: surface data file"
+    end if
+    deallocate(snowhydro_snw_rds_refrz)
+
+    ! read in a_coef 
+    allocate(sen_a_coef(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='a_coef', flag='read', data=sen_a_coef, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       col%a_coef(:) = params_inst%a_coef
+       write(iulog,*) "source of param - a_coef is: parameter file"
+    else
+       do c = begc,endc
+          g = col%gridcell(c)
+          col%a_coef(c) = sen_a_coef(g)
+       end do
+       write(iulog,*) "source of param - a_coef is: surface data file"
+    end if
+    deallocate(sen_a_coef)
+
+    ! read in vcmaxha
+    allocate(acc_vcmaxha(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='vcmaxha', flag='read', data=acc_vcmaxha, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       col%vcmaxha(:) = params_inst%vcmaxha
+       write(iulog,*) "source of param - vcmaxha is: parameter file"
+    else
+       do c = begc,endc
+          g = col%gridcell(c)
+          col%vcmaxha(c) = acc_vcmaxha(g)
+       end do
+       write(iulog,*) "source of param - vcmaxha is: surface data file"
+    end if
+    deallocate(acc_vcmaxha)
+
+    ! read in vcmaxha
+    allocate(sen_cv(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='cv', flag='read', data=sen_cv, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       col%cv(:) = params_inst%cv
+       write(iulog,*) "source of param - cv is: parameter file"
+    else
+       do c = begc,endc
+          g = col%gridcell(c)
+          col%cv(c) = sen_cv(g)
+       end do
+       write(iulog,*) "source of param - cv is: surface data file"
+    end if
+    deallocate(sen_cv)
+
+    !-----------------------------------------------
     ! SCA shape function defined
     !-----------------------------------------------
+    
+    allocate(slopebeta_2d(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='slopebeta', flag='read', data=slopebeta_2d, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+!       call shr_sys_abort(' ERROR: slopebeta NOT on surfdata file'//&
+!            errMsg(sourcefile, __LINE__))
+       do c = begc,endc
+          ! microtopographic parameter, units are meters (try smooth function of slope)
+          g = col%gridcell(c)
+          slope0 = params_inst%slopemax**(1._r8/params_inst%slopebeta)
+          col%micro_sigma(c) = (col%topo_slope(c) + slope0)**(params_inst%slopebeta)
+       end do
+       write(iulog,*)  "source of param - slopebeta is: parameter file" 
+    else
+       do c = begc,endc
+          ! microtopographic parameter, units are meters (try smooth function of slope)
+          g = col%gridcell(c)
+          slope0 = params_inst%slopemax**(1._r8/slopebeta_2d(g))
+          col%micro_sigma(c) = (col%topo_slope(c) + slope0)**(slopebeta_2d(g))
+       end do
+       write(iulog,*)  "source of param - slopebeta is: surface data file"
+    end if
+    deallocate(slopebeta_2d)
 
-    do c = begc,endc
-       ! microtopographic parameter, units are meters (try smooth function of slope)
-       slope0 = params_inst%slopemax**(1._r8/params_inst%slopebeta)
-       col%micro_sigma(c) = (col%topo_slope(c) + slope0)**(params_inst%slopebeta)
-    end do
+    ! read in medlynintercept - pft-denpendent variables
+!    call check_dim_size(ncid, 'maxpft', mxpft+1)
+    allocate(temp_medlynintercept(bounds%begg:bounds%endg, 0:mxpft))
+    call ncd_io(ncid=ncid, varname='medlynintercept', flag='read', data=temp_medlynintercept, &
+         dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+!       write(iulog,*)'surfrd error: medlynintercept not on surface data file'
+       do g = bounds%begg,bounds%endg
+          grc%medlynintercept(g,:) = pftcon%medlynintercept(:)
+       end do
+       write(iulog,*)  "source of param - medlynintercept is: parameter file"
+    else
+       grc%medlynintercept(bounds%begg:bounds%endg,0:mxpft) = temp_medlynintercept(bounds%begg:bounds%endg,0:mxpft)
+       write(iulog,*)  "source of param - medlynintercept is: surface data file"
+    end if
+    deallocate(temp_medlynintercept)
+
+    ! read in medlynslope - pft-denpendent variables
+    allocate(temp_medlynslope(bounds%begg:bounds%endg, 0:mxpft))
+    call ncd_io(ncid=ncid, varname='medlynslope', flag='read', data=temp_medlynslope, &
+         dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       do g = bounds%begg,bounds%endg
+          grc%medlynslope(g,:) = pftcon%medlynslope(:)
+       end do
+       write(iulog,*)  "source of param - medlynslope is: parameter file"
+    else
+       grc%medlynslope(bounds%begg:bounds%endg,0:mxpft) = temp_medlynslope(bounds%begg:bounds%endg,0:mxpft)
+       write(iulog,*)  "source of param - medlynslope is: surface data file"
+    end if
+    deallocate(temp_medlynslope)
+
+    ! read in krmax - pft-denpendent variables
+    allocate(temp_krmax(bounds%begg:bounds%endg, 0:mxpft))
+    call ncd_io(ncid=ncid, varname='krmax', flag='read', data=temp_krmax, &
+         dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       do g = bounds%begg,bounds%endg
+          grc%krmax(g,:) = pftcon%krmax(:)
+       end do
+       write(iulog,*)  "source of param - krmax is: parameter file"
+    else
+       grc%krmax(bounds%begg:bounds%endg,0:mxpft) = temp_krmax(bounds%begg:bounds%endg,0:mxpft)
+       write(iulog,*)  "source of param - krmax is: surface data file"
+    end if
+    deallocate(temp_krmax)
 
     call ncd_pio_closefile(ncid)
 

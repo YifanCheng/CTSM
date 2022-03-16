@@ -325,11 +325,11 @@ contains
             z0hg(p) = max(z0hg(p), minz0lake)
          else if (snl(c) == 0) then    ! frozen lake with ice
             z0mg(p) = z0frzlake
-            z0hg(p) = z0mg(p) / exp(col%a_coef(c) * (ust_lake(c) * z0mg(p) / 1.5e-5_r8)**params_inst%a_exp) ! Consistent with BareGroundFluxes
+            z0hg(p) = z0mg(p) / exp(col%a_coef(c) * (ust_lake(c) * z0mg(p) / 1.5e-5_r8)**col%a_exp(c)) ! Consistent with BareGroundFluxes
             z0qg(p) = z0hg(p)
          else                          ! use roughness over snow as in Biogeophysics1
             z0mg(p) = params_inst%zsno
-            z0hg(p) = z0mg(p) / exp(col%a_coef(c) * (ust_lake(c) * z0mg(p) / 1.5e-5_r8)**params_inst%a_exp)  ! Consistent with BareGroundFluxes
+            z0hg(p) = z0mg(p) / exp(col%a_coef(c) * (ust_lake(c) * z0mg(p) / 1.5e-5_r8)**col%a_exp(c))  ! Consistent with BareGroundFluxes
             z0qg(p) = z0hg(p)
          end if
 
@@ -546,11 +546,11 @@ contains
             else if (snl(c) == 0) then
                ! in case it was above freezing and now below freezing
                z0mg(p) = z0frzlake
-               z0hg(p) = z0mg(p) / exp(col%a_coef(c) * (ustar(p) * z0mg(p) / 1.5e-5_r8)**params_inst%a_exp) ! Consistent with BareGroundFluxes
+               z0hg(p) = z0mg(p) / exp(col%a_coef(c) * (ustar(p) * z0mg(p) / 1.5e-5_r8)**col%a_exp(c)) ! Consistent with BareGroundFluxes
                z0qg(p) = z0hg(p)
             else ! Snow layers
                ! z0mg won't have changed
-               z0hg(p) = z0mg(p) / exp(col%a_coef(c) * (ustar(p) * z0mg(p) / 1.5e-5_r8)**params_inst%a_exp) ! Consistent with BareGroundFluxes
+               z0hg(p) = z0mg(p) / exp(col%a_coef(c) * (ustar(p) * z0mg(p) / 1.5e-5_r8)**col%a_exp(c)) ! Consistent with BareGroundFluxes
                z0qg(p) = z0hg(p)
             end if
 

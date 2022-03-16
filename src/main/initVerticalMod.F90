@@ -57,6 +57,8 @@ module initVerticalMod
      real(r8) :: a_coef         ! Drag coefficient under less dense canopy (unitless)
      real(r8) :: vcmaxha        ! Activation energy for vcmax (J/mol)
      real(r8) :: cv             ! Turbulent transfer coeff. between canopy surface and canopy air (m/s^(1/2)) 
+     real(r8) :: a_exp          ! Drag coefficient under less dense canopy (unitless)
+     real(r8) :: liq_canopy_storage_scalar ! Maximum storage of liquid water on leaf surface
   end type params_type
   type(params_type), private ::  params_inst
   !
@@ -99,6 +101,8 @@ contains
     call readNcdioScalar(ncid, 'a_coef'   , subname, params_inst%a_coef)
     call readNcdioScalar(ncid, 'vcmaxha'  , subname, params_inst%vcmaxha)
     call readNcdioScalar(ncid, 'cv'       , subname, params_inst%cv)
+    call readNcdioScalar(ncid, 'a_exp'    , subname, params_inst%a_exp)
+    call readNcdioScalar(ncid, 'liq_canopy_storage_scalar', subname, params_inst%liq_canopy_storage_scalar)
   end subroutine readParams
 
   !------------------------------------------------------------------------
@@ -153,6 +157,8 @@ contains
     real(r8) ,pointer     :: acc_vcmaxha   (:) ! read in params - vcmaxha
     real(r8) ,pointer     :: sen_cv        (:) ! read in params - cv
     real(r8) ,pointer     :: temp_krmax            (:,:) ! read in params - krmax
+    real(r8) ,pointer     :: sen_a_exp     (:) ! read in params - a_exp
+    real(r8) ,pointer     :: hydro_liq_can (:) ! read in params - liq_canopy_storage_scalar
 
     ! Possible values for levgrnd_class. The important thing is that, for a given column,
     ! layers that are fundamentally different (e.g., soil vs bedrock) have different
@@ -925,6 +931,36 @@ contains
        write(iulog,*) "source of param - cv is: surface data file"
     end if
     deallocate(sen_cv)
+
+    ! read in a_exp
+    allocate(sen_a_exp(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='a_exp', flag='read', data=sen_a_exp, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       col%a_exp(:) = params_inst%a_exp
+       write(iulog,*) "source of param - a_exp is: parameter file"
+    else
+       do c = begc,endc
+          g = col%gridcell(c)
+          col%a_exp(c) = sen_a_exp(g)
+       end do
+       write(iulog,*) "source of param - a_exp is: surface data file"
+    end if
+    deallocate(sen_a_exp)
+
+    ! read in a_exp
+    allocate(hydro_liq_can(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='liq_canopy_storage_scalar', flag='read', data=hydro_liq_can, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       col%liq_canopy_storage_scalar(:) = params_inst%liq_canopy_storage_scalar
+       write(iulog,*) "source of liq_canopy_storage_scalar - a_exp is: parameter file"
+    else
+       do c = begc,endc
+          g = col%gridcell(c)
+          col%liq_canopy_storage_scalar(c) = hydro_liq_can(g)
+       end do
+       write(iulog,*) "source of param - liq_canopy_storage_scalar is: surface data file"
+    end if
+    deallocate(hydro_liq_can)
 
     !-----------------------------------------------
     ! SCA shape function defined

@@ -422,6 +422,8 @@ contains
      ! is dry and transpiring.
      call BulkDiag_FracWet(bounds, num_soilp, filter_soilp, &
           ! Inputs
+          patch                 = patch, &
+          col                   = col, &
           frac_veg_nosno = canopystate_inst%frac_veg_nosno_patch(begp:endp), &
           elai           = canopystate_inst%elai_patch(begp:endp), &
           esai           = canopystate_inst%esai_patch(begp:endp), &
@@ -1113,6 +1115,7 @@ contains
 
    !-----------------------------------------------------------------------
    subroutine BulkDiag_FracWet(bounds, num_soilp, filter_soilp, &
+        patch, col, &
         frac_veg_nosno, elai, esai, snocan, liqcan, &
         fwet, fdry, fcansno)
      !
@@ -1130,6 +1133,8 @@ contains
      type(bounds_type), intent(in) :: bounds
      integer, intent(in) :: num_soilp
      integer, intent(in) :: filter_soilp(:)
+     type(patch_type), intent(in) :: patch
+     type(column_type), intent(in) :: col
 
      integer  , intent(in)    :: frac_veg_nosno( bounds%begp: ) ! fraction of vegetation not covered by snow (0 OR 1)
      real(r8) , intent(in)    :: elai( bounds%begp: )           ! canopy one-sided leaf area index with burying by snow
@@ -1141,7 +1146,7 @@ contains
      real(r8) , intent(inout) :: fcansno( bounds%begp: )        ! fraction of canopy that is snow covered (0 to 1)
      !
      ! !LOCAL VARIABLES:
-     integer  :: fp,p             ! indices
+     integer  :: fp,p,c           ! indices
      real(r8) :: h2ocan           ! total canopy water (mm H2O)
      real(r8) :: vegt             ! lsai
      !-----------------------------------------------------------------------
@@ -1157,12 +1162,13 @@ contains
 
      do fp = 1, num_soilp
         p = filter_soilp(fp)
+        c = patch%column(p)
         if (frac_veg_nosno(p) == 1) then
            h2ocan = snocan(p) + liqcan(p)
 
            if (h2ocan > 0._r8) then
               vegt    = frac_veg_nosno(p)*(elai(p) + esai(p))
-              fwet(p) = (h2ocan / (vegt * params_inst%liq_canopy_storage_scalar))**0.666666666666_r8
+              fwet(p) = (h2ocan / (vegt * col%liq_canopy_storage_scalar(c)))**0.666666666666_r8
               fwet(p) = min (fwet(p),maximum_leaf_wetted_fraction)   ! Check for maximum limit of fwet
               if (snocan(p) > 0._r8) then
                  fcansno(p) = (snocan(p) / (vegt * params_inst%snow_canopy_storage_scalar))**0.15_r8 ! must match snocanmx 

@@ -395,13 +395,13 @@ contains
     endif
     if ( allocated(hill_pftndx) ) then
        deallocate(hill_pftndx)
-       call HillslopePftFromFile()
+!       call HillslopePftFromFile()
     else
        ! Modify pft distributions
        ! this may require modifying subgridMod/natveg_patch_exists
        ! to ensure patch exists in every gridcell
 
-       call HillslopeDominantPft()
+!       call HillslopeDominantPft()
     
        !upland_ivt  = 13 ! c3 non-arctic grass
        !lowland_ivt = 7  ! broadleaf deciduous tree 

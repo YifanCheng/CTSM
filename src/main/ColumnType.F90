@@ -95,6 +95,9 @@ module ColumnType
      real(r8), pointer :: a_coef               (:)   ! Drag coefficient under less dense canopy (unitless)
      real(r8), pointer :: vcmaxha              (:)   ! Activation energy for vcmax (J/mol) 
      real(r8), pointer :: cv                   (:)   ! Turbulent transfer coeff. between canopy surface and canopy air (m/s^(1/2))
+     real(r8), pointer :: a_exp                (:)   ! Drag exponent under less dense canopy
+     real(r8), pointer :: liq_canopy_storage_scalar (:)   ! Maximum storage of liquid water on leaf surface
+
      ! levgrnd_class gives the class in which each layer falls. This is relevant for
      ! columns where there are 2 or more fundamentally different layer types. For
      ! example, this distinguishes between soil and bedrock layers. The particular value
@@ -183,6 +186,8 @@ contains
     allocate(this%a_coef      (begc:endc))                     ; this%a_coef      (:)   = spval
     allocate(this%vcmaxha     (begc:endc))                     ; this%vcmaxha     (:)   = spval
     allocate(this%cv          (begc:endc))                     ; this%cv          (:)   = spval
+    allocate(this%a_exp       (begc:endc))                     ; this%a_exp       (:)   = spval
+    allocate(this%liq_canopy_storage_scalar(begc:endc))        ; this%liq_canopy_storage_scalar(:) = spval
   end subroutine Init
 
   !------------------------------------------------------------------------
@@ -242,6 +247,8 @@ contains
     deallocate(this%a_coef     )
     deallocate(this%vcmaxha    )
     deallocate(this%cv         )
+    deallocate(this%a_exp      )
+    deallocate(this%liq_canopy_storage_scalar)
   end subroutine Clean
 
   !-----------------------------------------------------------------------

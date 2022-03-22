@@ -1011,7 +1011,7 @@ bioms:   do f = 1, fn
             ! changed by K.Sakaguchi from here
             ! transfer coefficient over bare soil is changed to a local variable
             ! just for readability of the code (from line 680)
-            csoilb = vkc / (col%a_coef(c) * (z0mg(c) * uaf(p) / 1.5e-5_r8)**params_inst%a_exp)
+            csoilb = vkc / (col%a_coef(c) * (z0mg(c) * uaf(p) / 1.5e-5_r8)**col%a_exp(c))
 
             !compute the stability parameter for ricsoilc  ("S" in Sakaguchi&Zeng,2008)
 

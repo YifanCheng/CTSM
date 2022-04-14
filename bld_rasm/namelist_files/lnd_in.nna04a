@@ -7,16 +7,37 @@
  create_crop_landunit = .true.
  crop_fsat_equals_zero = .false.
  fatmlndfrc = '/glade/p/ral/hap/common_data/rasm/inputdata/share/domains/domain.lnd.nna04a_nna04a.210305.nc'
- finidat = '/glade/p/ral/hap/common_data/rasm/inputdata/lnd/clm2/initdata/RASM_init_4km.clm2.r.2012-07-01-00000.nc'
+ finidat = '/glade/p/ral/hap/common_data/rasm/inputdata/lnd/clm2/initdata/RASM_init_hh_4km.clm2.r.2012-07-01-00000.nc'
  fsnowaging = '/glade/p/ral/hap/common_data/rasm/inputdata/lnd/clm2/snicardata/snicar_drdt_bst_fit_60_c070416.nc'
  fsnowoptics = '/glade/p/ral/hap/common_data/rasm/inputdata/lnd/clm2/snicardata/snicar_optics_5bnd_c090915.nc'
- fsurdat = '/glade/p/ral/hap/common_data/rasm/inputdata/lnd/clm2/surfdata/surfdata_nna4a_hist_16pfts_HAND_2_aspect_4_col_hillslope_geo_params_200_nlcd_annularx10_bedrock_pe.mth.nna.SG.OM.rasm.cdf5.nc'
+ fsurdat = '/glade/p/ral/hap/common_data/rasm/inputdata/lnd/clm2/surfdata/surfdata_nna4a.spatial_distrib.all.fillland.220411.T14.cdf5.nc'
  glc_do_dynglacier = .false.
  glc_snow_persistence_max_days = 0
  h2osno_max = 10000.0
- hist_dov2xy = .true.
- hist_nhtfrq = -3
+ hist_avgflag_pertape = 'A','A','A','A'
+ hist_dov2xy = .true.,.true.,.true.,.true.
+ hist_fincl2 = 'ALBD', 'ALBGRD', 'ALBGRI', 'ALBI', 'ALT', 'ALTMAX', 'EFLX_GNET', 'Qh', 'Qle',
+         'FSD24', 'FSI24', 'FSM_ICE', 'HK', 'LWdown', 'LWup', 'QDIRECT_THROUGHFALL', 'QDIRECT_THROUGHFALL_SNOW', 'QDRIP',
+         'QDRIP_SNOW', 'QFLX_EVAP_VEG', 'Qair', 'Qstor', 'RH', 'Rainf', 'Rnet', 'SNOFSDSND', 'SNOFSDSNI',
+         'SNOFSDSVD', 'SNOFSDSVI', 'SNOTTOPL', 'SNOWICE_ICE', 'SNO_ICE', 'SNO_LIQH2O', 'SNO_MELT', 'SNO_MELT_ICE', 'SNO_T',
+         'SNO_TK', 'SNO_TK_ICE', 'SNO_T_ICE', 'SNO_Z', 'SNO_Z_ICE'
+ hist_fincl3 = 'ALBD', 'ALT', 'ATM_TOPO', 'DSL', 'EFLX_GNET', 'EFLX_GRND_LAKE', 'EFLX_LH_TOT', 'FCEV', 'FCTR',
+         'FGEV', 'FGR', 'FGR12', 'FH2OSFC', 'FIRA', 'FIRE', 'FLDS', 'FSA', 'FSD24',
+         'FSDS', 'FSH', 'FSH_PRECIP_CONVERSION', 'FSH_RUNOFF_ICE_TO_LIQ', 'FSI24', 'FSM', 'FSM_ICE', 'FSNO', 'FSR',
+         'H2OCAN', 'H2OSFC', 'H2OSNO', 'H2OSOI', 'LIQCAN', 'LWup', 'PBOT', 'Q2M', 'QBOT',
+         'QDIRECT_THROUGHFALL', 'QDIRECT_THROUGHFALL_SNOW', 'QDRAI', 'QDRAI_PERCH', 'QDRAI_XS', 'QDRIP', 'QDRIP_SNOW', 'QFLOOD', 'QFLX_EVAP_TOT',
+         'QFLX_LIQDEW_TO_TOP_LAYER', 'QFLX_LIQEVAP_FROM_TOP_LAYER', 'QFLX_SNOW_DRAIN', 'QFLX_SNOW_DRAIN_ICE', 'QFLX_SOLIDDEW_TO_TOP_LAYER', 'QFLX_SOLIDEVAP_FROM_TOP_LAYER', 'QH2OSFC', 'QINFL', 'QINTR',
+         'QOVER', 'QRGWL', 'QRUNOFF', 'QSNOMELT', 'QSNOUNLOAD', 'QSNO_TEMPUNLOAD', 'QSNO_WINDUNLOAD', 'QSOIL', 'QVEGE',
+         'QVEGT', 'Qair', 'Qh', 'Qle', 'Qstor', 'RAIN', 'RAIN_FROM_ATM', 'RH', 'RH2M',
+         'SNOCAN', 'SNOTTOPL', 'SNOTXMASS', 'SNOW', 'SNOWDP', 'SNOWICE', 'SNOWLIQ', 'SNOW_DEPTH', 'SNO_T',
+         'SNO_TK', 'SNO_Z', 'SOILICE', 'SOILLIQ', 'SOILWATER_10CM', 'SWBGT', 'TBOT', 'TG', 'TH2OSFC',
+         'THBOT', 'TLAKE', 'TREFMNAV', 'TREFMXAV', 'TSA', 'TSKIN', 'TSOI', 'TSOI_10CM', 'TWS',
+         'U10', 'VPD2M', 'VPD_CAN', 'ZBOT', 'ZWT', 'ZWT_PERCH'
+ hist_fincl4 = 'ALBD', 'ALT', 'EFLX_LH_TOT', 'FLDS', 'FSDS', 'FSH', 'H2OSNO', 'PBOT', 'Q2M', 'QFLOOD', 'QFLX_EVAP_TOT', 'QH2OSFC',
+         'QOVER', 'QRUNOFF', 'Qh', 'Qle', 'RH2M', 'TBOT', 'TG', 'TH2OSFC', 'TSA', 'TSKIN', 'TSOI', 'U10'
  hist_master_list_file = .false.
+ hist_mfilt = 12,12,1,1
+ hist_nhtfrq = 0,0,-24,-24
  irrigate = .true.
  is_outmatrix = .false.
  maxpatch_glcmec = 10
@@ -43,9 +64,9 @@
  use_fertilizer = .false.
  use_fun = .false.
  use_grainproduct = .false.
- use_hillslope = .false.
+ use_hillslope = .true.
  use_hydrstress = .true.
- use_init_interp = .true.
+ use_init_interp = .false.
  use_lai_streams = .false.
  use_lch4 = .false.
  use_luna = .true.

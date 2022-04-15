@@ -8,6 +8,7 @@
  crop_fsat_equals_zero = .false.
  fatmlndfrc = '/glade/p/ral/hap/common_data/rasm/inputdata/share/domains/domain.lnd.nna04a_nna04a.210305.nc'
  finidat = '/glade/p/ral/hap/common_data/rasm/inputdata/lnd/clm2/initdata/RASM_init_hh_4km.clm2.r.2012-07-01-00000.nc'
+ for_testing_run_ncdiopio_tests = .false.
  fsnowaging = '/glade/p/ral/hap/common_data/rasm/inputdata/lnd/clm2/snicardata/snicar_drdt_bst_fit_60_c070416.nc'
  fsnowoptics = '/glade/p/ral/hap/common_data/rasm/inputdata/lnd/clm2/snicardata/snicar_optics_5bnd_c090915.nc'
  fsurdat = '/glade/p/ral/hap/common_data/rasm/inputdata/lnd/clm2/surfdata/surfdata_nna4a.spatial_distrib.all.fillland.220411.T14.cdf5.nc'
@@ -34,10 +35,11 @@
          'THBOT', 'TLAKE', 'TREFMNAV', 'TREFMXAV', 'TSA', 'TSKIN', 'TSOI', 'TSOI_10CM', 'TWS',
          'U10', 'VPD2M', 'VPD_CAN', 'ZBOT', 'ZWT', 'ZWT_PERCH'
  hist_fincl4 = 'ALBD', 'ALT', 'EFLX_LH_TOT', 'FLDS', 'FSDS', 'FSH', 'H2OSNO', 'PBOT', 'Q2M', 'QFLOOD', 'QFLX_EVAP_TOT', 'QH2OSFC',
-         'QOVER', 'QRUNOFF', 'Qh', 'Qle', 'RH2M', 'TBOT', 'TG', 'TH2OSFC', 'TSA', 'TSKIN', 'TSOI', 'U10'
+         'QOVER', 'QRUNOFF', 'Qh', 'Qle', 'RH2M', 'TBOT', 'TG', 'TH2OSFC', 'TSA', 'TSKIN', 'TSOI', 'U10',
+         'VPD2M'
  hist_master_list_file = .false.
- hist_mfilt = 12,12,1,1
- hist_nhtfrq = 0,0,-24,-24
+ hist_mfilt = 12,12,1,8
+ hist_nhtfrq = 0,0,-24,-3
  irrigate = .true.
  is_outmatrix = .false.
  maxpatch_glcmec = 10
@@ -126,7 +128,6 @@
 &dynpft_consistency_checks
 /
 &clm_initinterp_inparm
- init_interp_method = 'general'
 /
 &century_soilbgcdecompcascade
 /

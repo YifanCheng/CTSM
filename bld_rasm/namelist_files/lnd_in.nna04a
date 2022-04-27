@@ -38,7 +38,7 @@
          'QOVER', 'QRUNOFF', 'Qh', 'Qle', 'RH2M', 'TBOT', 'TG', 'TH2OSFC', 'TSA', 'TSKIN', 'TSOI', 'U10',
          'VPD2M'
  hist_master_list_file = .false.
- hist_mfilt = 12,12,1,8
+ hist_mfilt = 1,1,1,8
  hist_nhtfrq = 0,0,-24,-3
  irrigate = .true.
  is_outmatrix = .false.
